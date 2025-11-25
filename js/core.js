@@ -409,36 +409,65 @@ function sendNotification(title="Test Notification", body="This is a test notifi
     notif.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px;">
             <i class="ti ti-${icon}" style="font-size: 30px; color: ${color}; height:40px; width:40px; border-radius:8px; flex:0 0 40px;"></i>
-            <div style="display:flex; flex-direction:column;">
+            <div style="color: white; display:flex; flex-direction:column;">
                 <strong style="font-size:medium;">${title}</strong>
                 <span style="font-size:small;">${body}</span>
             </div>
         </div>
     `;
-    // wrapper for positioning + animation
+    // wrapper for positioning + animation. Put notification and ping inside it
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position: fixed; bottom: 10px; right: -5px; z-index: 10000;`;
+
+    // Make notif positioned relative inside the wrapper so the ping can be absolute
+    // Use CSS variables for background/foreground so we can animate the background color
     notif.style.cssText = `
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        background: rgb(20, 20, 20);
-        color: white;
+        position: relative;
+        background: var(--notif-bg, rgb(20, 20, 20));
+        color: var(--notif-foreground, white);
         padding: 10px 15px;
         border-radius: 10px;
         box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 6px 6px;
         border-left: 6px solid ${color};
         font-family: sans-serif;
-        z-index: 10000;
         transform: translateX(0px);
         opacity: 1;
-        transition: transform 300ms 
-        cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms;
+        transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms;
         cursor: pointer;
         width: calc(100% - 55px);
         max-width: 300px;
         max-height: 200px;
     `;
 
-    document.body.appendChild(notif);
+    // expose color and readable foreground for CSS animations via CSS variables
+    notif.style.setProperty('--notif-color', color);
+    notif.style.setProperty('--notif-bg', 'rgb(20, 20, 20)');
+    try {
+        notif.style.setProperty('--notif-foreground', readableTextColor(color));
+    } catch (e) {
+        notif.style.setProperty('--notif-foreground', 'white');
+    }
+
+    // Create ping animation element positioned relative to the notif
+    const ping = document.createElement('div');
+    ping.style.cssText = `
+        position: absolute;
+        left: 18px;
+        bottom: -10px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--notif-color);
+        animation: notification-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        pointer-events: none;
+    `;
+
+    wrapper.appendChild(notif);
+    wrapper.appendChild(ping);
+    document.body.appendChild(wrapper);
+    notif.classList.add('attention')
+    setTimeout(() => { notif.classList.remove('attention'); }, 2000);
+
     // play sound (safe for autoplay policies; will fail silently if blocked)
     const audio = new Audio('notification.wav');
     audio.preload = 'auto';
@@ -450,11 +479,11 @@ function sendNotification(title="Test Notification", body="This is a test notifi
         try { audio.pause(); audio.currentTime = 0; } catch (e) {}
     });
 
-    // ensure audio is stopped/cleaned up when the notification element is removed
+    // ensure audio is stopped/cleaned up when the wrapper (which contains notif+ping) is removed
     const mo = new MutationObserver((mutations, observer) => {
         for (const m of mutations) {
             for (const n of m.removedNodes) {
-                if (n === notif) {
+                if (n === wrapper) {
                     try { audio.pause(); audio.currentTime = 0; } catch (e) {}
                     observer.disconnect();
                     return;
@@ -474,11 +503,12 @@ function sendNotification(title="Test Notification", body="This is a test notifi
     function removeNotif() {
         if (removed) return;
         removed = true;
-        // play exit animation
+        // play exit animation on the notif inside the wrapper
         notif.style.transform = 'translateX(120%)';
         notif.style.opacity = '0';
+        // remove the whole wrapper after the exit animation
         setTimeout(() => {
-            if (notif.parentElement) notif.parentElement.removeChild(notif);
+            if (wrapper.parentElement) wrapper.parentElement.removeChild(wrapper);
         }, animMs);
     }
 

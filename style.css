@@ -481,3 +481,44 @@ a {
   color: black;
   margin-right: 10px;
 }
+
+/* attention animation: briefly change background color and text color
+   Uses CSS variables set on the element: --notif-color, --notif-bg, --notif-foreground */
+.attention {
+  animation: attention-flash 1s ease-in-out;
+}
+
+@keyframes attention-flash {
+  0% {
+    background-color: var(--notif-bg, rgb(20,20,20));
+    color: var(--notif-foreground, white);
+  }
+  30% {
+    background-color: var(--notif-color);
+    color: var(--notif-foreground, white);
+  }
+  70% {
+    background-color: var(--notif-color);
+    color: var(--notif-foreground, white);
+  }
+  100% {
+    background-color: var(--notif-bg, rgb(20,20,20));
+    color: var(--notif-foreground, white);
+  }
+}
+
+/* ping/ripple animation used by the small indicator placed under notifications */
+@keyframes notification-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
