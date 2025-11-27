@@ -339,7 +339,7 @@ function loadSparkAlerts() {
     fetch('https://api.sparkradar.app/alerts?t=' + Date.now())
     .then(response => {
         if (!response.ok) { 
-          sendNotification("Spark Alerts API Error", "Failed to fetch LiveAlerts data. Status code: " + response.status, "alert-circle-rounded", "#ff2121");
+          sendNotification("Spark Alerts API Error", "Failed to fetch sparkalerts data. Status code: " + response.status, "alert-circle-rounded", "#ff2121");
           throw new Error('Spark Alerts API request failed with code ' + response.status); 
         }
         return response.json();

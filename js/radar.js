@@ -80,25 +80,7 @@ function loadRadarStations(onlyremove=false) {
                 const props = feature.properties;
                 const coords = feature.geometry.coordinates;
 
-                // Project the station coordinates to screen position
-                const point = map.project(coords);
-
-                // Get the popup element
-                const popup = document.getElementById('customPopup');
-
-                // Set popup position
-                popup.style.left = `${point.x}px`;
-                popup.style.top = `${point.y}px`;
-                popup.classList.remove('hidden');
-
-                // Fill popup content with station info
-                document.querySelector('.popup-body').innerHTML = `
-                    <div>
-                        <strong>Radar Station:</strong> ${props.id}<br>
-                        <strong>Status:</strong> ${props.status}<br>
-                        <strong>Location:</strong> ${coords[1].toFixed(3)}, ${coords[0].toFixed(3)}
-                    </div>
-                `;
+                map.flyTo({ center: coords });
             });
         })
         .catch(error => {

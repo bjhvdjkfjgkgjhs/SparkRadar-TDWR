@@ -53,11 +53,11 @@ document.addEventListener('keydown', (e) => {
 
 // Settings
 var notificationsEnabled = localStorage.getItem('sparkradar_notifications') === 'true';
-var livealertsEnabled = localStorage.getItem('sparkradar_livealerts') === 'true';
+var sparkalertsEnabled = localStorage.getItem('sparkradar_sparkalerts') === 'true';
 
 function updateSettingsUI() {
     document.getElementById('set-notifications').style.background = notificationsEnabled ? '#27beff' : '#333';
-    document.getElementById('set-livealerts').style.background = livealertsEnabled ? '#27beff' : '#333';
+    document.getElementById('set-sparkalerts').style.background = sparkalertsEnabled ? '#27beff' : '#333';
 }
 
 // Initial UI update
@@ -75,9 +75,9 @@ function toggleNotifications() {
 }
 
 var firstuse1 = true;
-function toggleLivealerts() {
-    livealertsEnabled = !livealertsEnabled;
-    localStorage.setItem('sparkradar_livealerts', livealertsEnabled ? 'true' : 'false');
+function togglesparkalerts() {
+    sparkalertsEnabled = !sparkalertsEnabled;
+    localStorage.setItem('sparkradar_sparkalerts', sparkalertsEnabled ? 'true' : 'false');
     if (firstuse1) {
         sendNotification("Warning", "DO NOT RELY ON THESE ALERTS. They may not be reliable yet!", "alert-square-rounded", "#ff4444");
     }
