@@ -1,3 +1,19 @@
+
+// Adds the radar layer to the map
+var prevLatestframe = null;
+var radarMode = "mos";
+var radarStation = "CONUS";
+var radaranimator = null;
+var firstopen = true;
+var frameidx = 0;
+// Double-buffer for raster animation to avoid blanking when frames load
+var _bufferIndex = 0; // 0 or 1
+var _bufferSources = ['datalayer_a_src', 'datalayer_b_src'];
+var _bufferLayers = ['datalayer_a', 'datalayer_b'];
+var _activeBuffer = -1; // index of currently visible buffer
+// Track loading state to avoid duplicate loads for same buffer
+var _bufferLoading = [false, false];
+
 // Loads the radar stations
 function loadRadarStations(onlyremove=false) {
     if (onlyremove) {
@@ -81,6 +97,10 @@ function loadRadarStations(onlyremove=false) {
                 const coords = feature.geometry.coordinates;
 
                 map.flyTo({ center: coords });
+
+                radarStation = props.id.slice(-4);
+                radarMode = "station";
+                loadRadar(radarStation, false, true);
             });
         })
         .catch(error => {
@@ -170,20 +190,6 @@ function getRadarFrameTimes(radarStation) {
 }
 
 
-// Adds the radar layer to the map
-var prevLatestframe = null;
-var radarMode = "mos";
-var radarStation = "CONUS";
-var radaranimator = null;
-var firstopen = true;
-// Double-buffer for raster animation to avoid blanking when frames load
-var _bufferIndex = 0; // 0 or 1
-var _bufferSources = ['datalayer_a_src', 'datalayer_b_src'];
-var _bufferLayers  = ['datalayer_a', 'datalayer_b'];
-var _activeBuffer = -1; // index of currently visible buffer
-// Track loading state to avoid duplicate loads for same buffer
-var _bufferLoading = [false, false];
-
 function safeRemoveLayerAndSource(layerId, sourceId) {
     return new Promise((resolve) => {
         const layerExists = !!map.getLayer(layerId);
@@ -213,10 +219,20 @@ function safeRemoveLayerAndSource(layerId, sourceId) {
 
 
 function loadRadar(station = radarStation, isAnim = false, force = false) {
-
-    var frameidx = parseInt(animationSlider.value);
-
     station = station.toUpperCase();
+
+    // === NEW: If station actually changed, reset double buffer state ===
+    if (station !== radarStation) {
+        // Clean both buffers completely
+        _bufferSources.forEach((srcId, i) => {
+            const lyrId = _bufferLayers[i];
+            if (map.getLayer(lyrId)) map.removeLayer(lyrId);
+            if (map.getSource(srcId)) map.removeSource(srcId);
+        });
+        _activeBuffer = -1;
+        _bufferIndex = 0;
+    }
+
     radarStation = station;
 
     getRadarFrameTimes(station)
@@ -226,7 +242,7 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             if (station === "CANMOS") {
                 document.getElementById("radarTitle").innerText = "CANADIAN MOSAIC";
                 radarMode = "canmos";
-            } else if (radarMode === "mos"){
+            } else if (radarMode === "mos") {
                 document.getElementById("radarTitle").innerText = "CONUS MOSAIC";
             } else {
                 document.getElementById("radarTitle").innerText = station;
@@ -237,124 +253,107 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 return;
             }
 
-            const now = new Date();
-
-            let latestframe;
-            let times;
+            let times, latestframe;
             if (station === "CANMOS") {
-                if (stationFrames[2]?.times?.length > 0) {
-                    document.getElementById("animationSlider").max = stationFrames[2]?.times?.length - 1 || 1;
-                    document.getElementById("animationSlider").min = document.getElementById("animationSlider").max - 12;
-                    times = stationFrames[2].times;
-                    latestframe = times[frameidx];
-                } else {
-                    console.error("No times available for CANMOS RADAR_1KM_RRAI layer");
-                    return;
-                }
+                const layerData = stationFrames.find(l => l.name === "RADAR_1KM_RRAI") || stationFrames[2];
+                times = layerData?.times || [];
             } else {
-                if (stationFrames[0]?.times?.length > 0) {
-                    times = stationFrames[0].times;
-                    document.getElementById("animationSlider").max = stationFrames[0]?.times?.length - 1 || 1;
-                    document.getElementById("animationSlider").min = document.getElementById("animationSlider").max - 12;
-                    if (times.length === 0) {
-                        console.error("No valid timestamps for station:", station);
-                        return;
-                    }
-                    latestframe = times[frameidx];
-                } else {
-                    console.error("No times available for station:", station);
-                    return;
-                }
+                times = stationFrames[0]?.times || [];
             }
 
-            if (firstopen) {
-                document.getElementById("animationSlider").value = document.getElementById("animationSlider").max;
-                firstopen = false;
-                loadRadar();
+            if (times.length === 0) {
+                console.error("No valid timestamps for station:", station);
                 return;
             }
 
-            if (!force) {
-                if (latestframe === prevLatestframe) {
-                    console.log("Radar time unchanged, skipping update.");
-                    return;
-                }
+            // Set slider bounds
+            const maxIdx = times.length - 1;
+            const minIdx = Math.max(0, maxIdx - 12);
+            document.getElementById("animationSlider").max = maxIdx;
+            document.getElementById("animationSlider").min = minIdx;
+
+            if (firstopen && document.getElementById("animationSlider").value == maxIdx) firstopen = false;
+
+            latestframe = times[frameidx];
+
+            if (!force && latestframe === prevLatestframe) {
+                console.log("Radar time unchanged, skipping update.");
+                return;
             }
 
-            console.log("Updating radar to latest frame:", latestframe);
+            console.log("Updating radar to frame:", latestframe);
             prevLatestframe = latestframe;
 
-            // Prepare tiles URL(s) for the new frame
-            let tilesUrl = null;
-            if (station === "CANMOS") {
-                tilesUrl = `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`;
-            } else {
-                tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
-            }
+            // Build WMS URL
+            let tilesUrl = (station === "CANMOS")
+                ? `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`
+                : `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
 
             document.getElementById("animationtime").innerText = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            // Double buffer: load into the inactive buffer first so existing frame stays visible
+            // Double buffering
             const newBuffer = _bufferIndex;
             const newSourceId = _bufferSources[newBuffer];
             const newLayerId = _bufferLayers[newBuffer];
 
-            // Clean up if an old source/layer with the same id exists (leftover)
+            // Clean up any existing layer/source with same ID
             if (map.getLayer(newLayerId)) map.removeLayer(newLayerId);
             if (map.getSource(newSourceId)) map.removeSource(newSourceId);
 
-            // Add source for the new frame (opacity 0 initially)
+            // Add new source and layer
             map.addSource(newSourceId, {
                 type: "raster",
                 tiles: [tilesUrl],
-                tileSize: radaranimator ? 1024 : 256
+                tileSize: radaranimator ? 1024 : 256 // higher res when paused
             });
 
             map.addLayer({
                 id: newLayerId,
                 type: "raster",
                 source: newSourceId,
-                paint: {
-                    "raster-opacity": 0,
-                }
+                paint: { "raster-opacity": 0 }
             }, 'Pier');
 
-            // Wait until the new source is loaded (tiles requested and parsed) before swapping
+            // Wait for new tiles to load before fading in
             const onSourceData = (e) => {
-                if (e.sourceId !== newSourceId) return;
-                // isSourceLoaded indicates the source's tileset is ready
-                if (!e.isSourceLoaded) return;
+                if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
 
-                // Swap opacities: fade in new layer, hide old layer
-                try {
-                    // Show new layer
-                    map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                map.off('sourcedata', onSourceData);
 
-                    // Hide previous active layer (if any)
-                    if (_activeBuffer !== -1) {
-                        const oldLayerId = _bufferLayers[_activeBuffer];
-                        // Keep old layer visible a moment longer then remove
+                // Fade in the new frame
+                map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+
+                // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===
+                if (_activeBuffer !== -1) {
+                    const oldLayerId = _bufferLayers[_activeBuffer];
+                    const oldSourceId = _bufferSources[_activeBuffer];
+
+                    // Only try to fade out if the layer still exists
+                    if (map.getLayer(oldLayerId)) {
                         map.setPaintProperty(oldLayerId, 'raster-opacity', 0);
-                        // Remove old layer and source after short delay to ensure DOM updated
-                        setTimeout(() => {
-                            try {
-                                const oldSourceId = _bufferSources[_activeBuffer];
-                                if (map.getLayer(oldLayerId)) map.removeLayer(oldLayerId);
-                                if (map.getSource(oldSourceId)) map.removeSource(oldSourceId);
-                            } catch (err) { console.warn('Failed cleanup old buffer', err); }
-                        }, 300);
                     }
 
-                    // Mark this buffer as active and toggle buffer index for next load
-                    _activeBuffer = newBuffer;
-                    _bufferIndex = 1 - _bufferIndex;
-                } finally {
-                    // Unbind the listener for this source load
-                    map.off('sourcedata', onSourceData);
+                    // Always clean up source + layer safely (even if layer already gone)
+                    safeRemoveLayerAndSource(oldLayerId, oldSourceId).catch(err => {
+                        console.warn("Cleanup warning (safe to ignore):", err.message);
+                    });
                 }
+
+                // Activate new buffer
+                _activeBuffer = newBuffer;
+                _bufferIndex = 1 - _bufferIndex;
             };
 
             map.on('sourcedata', onSourceData);
+
+            // Optional timeout fallback in case sourcedata never fires
+            setTimeout(() => {
+                if (map.getPaintProperty(newLayerId, 'raster-opacity') === 0) {
+                    map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                }
+                map.off('sourcedata', onSourceData);
+            }, 8000);
+
         })
         .catch(error => {
             console.error("Error loading radar:", error);
@@ -366,23 +365,24 @@ animationSlider.oninput = function() {
     loadRadar(radarStation);
 }
 
-animationplaypause.onclick = function() {
+animationplaypause.onclick = function () {
     if (radaranimator) {
-        document.getElementById("animationplaypause").innerHTML = `<i class="ti ti-player-play-filled"></i>`;
         clearInterval(radaranimator);
         radaranimator = null;
-        setTimeout( () => loadRadar(radarStation, null, true) , 200); // Load at the end to revert to higher quality tiles
+        document.getElementById("animationplaypause").innerHTML = `<i class="ti ti-player-play-filled"></i>`;
+
+        // Force reload current frame in high resolution
+        setTimeout(() => loadRadar(radarStation, false, true), 100);
     } else {
         document.getElementById("animationplaypause").innerHTML = `<i class="ti ti-player-pause-filled"></i>`;
         radaranimator = setInterval(() => {
-            let currentValue = parseInt(animationSlider.value);
-            if (currentValue < parseInt(animationSlider.max)) {
-                animationSlider.value = currentValue + 1;
-                loadRadar(radarStation);
-            } else {
+            let val = parseInt(animationSlider.value);
+            if (val >= parseInt(animationSlider.max)) {
                 animationSlider.value = animationSlider.min;
-                loadRadar(radarStation);
+            } else {
+                animationSlider.value = val + 1;
             }
-        }, 1000);
+            loadRadar(radarStation);
+        }, 800); // Slightly faster/smoother than 1000ms
     }
-}
+};
