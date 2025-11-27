@@ -271,6 +271,9 @@ function loadAlerts() {
             // DEBUGGING
             console.debug(alert)
 
+            // Ensure the alert has coordinates
+            if (alert.geometry == null) { return; }
+
             // Verify there are no duplicate alerts
             if (alertIds.includes(alert.id)) { return; }
 
