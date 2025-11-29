@@ -118,12 +118,3 @@ map.on('render', () => {
     popup.style.left = `${point.x}px`;
     popup.style.top = `${point.y}px`;
 });
-
-
-// Draw - WIP
-
-const drawBtn = document.getElementById('drawBtn');
-let isDrawing = false;
-let drawCoords = [];
-let drawLineId = 'draw-line';
-let drawOutlineId = 'draw-outline';
