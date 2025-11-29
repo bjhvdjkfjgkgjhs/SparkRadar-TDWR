@@ -140,6 +140,7 @@ document.getElementById("refreshBtn").addEventListener('click', () => {
 
 // Measure
 const measureBtn = document.getElementById('measureBtn');
+document.getElementById('measureinfo').style.display = 'none';
 var measuring = false;
 var measureCircle = null;
 var measureCenter = null;
@@ -183,19 +184,8 @@ const onClick = (e) => {
         map.off('click', onClick);
 
         // Show radius label
-        const label = document.createElement('div');
-        label.className = 'measure-label';
-        label.style.position = 'absolute';
-        label.style.left = `${map.project(e.lngLat).x + 10}px`;
-        label.style.top = `${map.project(e.lngLat).y}px`;
-        label.style.background = 'rgba(0,0,0,0.7)';
-        label.style.color = '#fff';
-        label.style.padding = '4px 8px';
-        label.style.borderRadius = '6px';
-        label.style.pointerEvents = 'none';
-        label.innerText = `${milesFromMeters(measureRadius)} mi`;
-        label.id = 'measure-radius-label';
-        document.body.appendChild(label);
+        document.getElementById('measureinfo').style.display = 'block';
+        document.getElementById('measurelength').innerHTML = `Distance: ${milesFromMeters(measureRadius)} mi`;
     }
 };
 
@@ -280,8 +270,8 @@ measureBtn.addEventListener('click', () => {
         if (map.getSource('measure-dot')) map.removeSource('measure-dot');
         if (map.getLayer('measure-line')) map.removeLayer('measure-line');
         if (map.getSource('measure-line')) map.removeSource('measure-line');
-        const lbl = document.getElementById('measure-radius-label');
-        if (lbl) lbl.remove();
+        document.getElementById('measurelength').innerHTML = `Distance: 0mi.`;
+        document.getElementById('measureinfo').style.display = 'none';
         measureCenter = null;
         measureRadius = null;
         measureCircle = null;

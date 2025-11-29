@@ -482,6 +482,13 @@ a {
   margin-right: 10px;
 }
 
+#measureinfo {
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  background: rgb(20,20,20) !important;
+}
+
 /* attention animation: briefly change background color and text color
    Uses CSS variables set on the element: --notif-color, --notif-bg, --notif-foreground */
 .attention {
