@@ -13,12 +13,14 @@ var _bufferLayers = ['datalayer_a', 'datalayer_b'];
 var _activeBuffer = -1; // index of currently visible buffer
 // Track loading state to avoid duplicate loads for same buffer
 var _bufferLoading = [false, false];
+// Sequence counter to identify the most recent radar load request
+var _radarLoadSeq = 0;
 
 // Loads the radar stations
 function loadRadarStations(onlyremove=false) {
     if (onlyremove) {
         if (map.getSource('radar-stations')) {
-            if (map.getLayer('radar-stations')) map.removeLayer('radar-stations');
+            try{ if (map.getLayer('radar-stations')) map.removeLayer('radar-stations'); } catch {}
             map.removeSource('radar-stations');
         }
         return;
@@ -34,7 +36,7 @@ function loadRadarStations(onlyremove=false) {
 
             // Remove previous radar station layers/sources if they exist
             if (map.getSource('radar-stations')) {
-                if (map.getLayer('radar-stations')) map.removeLayer('radar-stations');
+                try { if (map.getLayer('radar-stations')) map.removeLayer('radar-stations'); } catch {}
                 map.removeSource('radar-stations');
             }
 
@@ -246,6 +248,13 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 document.getElementById("radarTitle").innerText = "CONUS MOSAIC";
             } else {
                 document.getElementById("radarTitle").innerText = station;
+                document.getElementById("products").innerHTML  = `
+                    <div class="product-item">Base Reflectivity</div>
+                    <div class="product-item">Base Velocity</div>
+                    <div class="product-item">Precipitation Classification</div>
+                    <div class="product-item">1hr Precipitation Accumulation</div>
+                    <div class="product-item">Total Precipitation Accumulation</div>
+                    `;
             }
 
             if (!stationFrames || stationFrames.length === 0) {
@@ -285,9 +294,15 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             prevLatestframe = latestframe;
 
             // Build WMS URL
-            let tilesUrl = (station === "CANMOS")
-                ? `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`
-                : `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+            var tilesUrl;
+            if (station.toLowerCase() == "canmos") {
+                tilesUrl = `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`;
+            } else if (station.toLowerCase() == "conus") {
+                tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+            } else {
+                var layerstr = `${station.toLowerCase()}_sr_bref`;
+                tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/ows?service=WMS&request=GetMap&format=image/png&transparent=true&layers=${layerstr}&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+            }
 
             document.getElementById("animationtime").innerText = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 
@@ -296,9 +311,13 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             const newSourceId = _bufferSources[newBuffer];
             const newLayerId = _bufferLayers[newBuffer];
 
+            // Each actual tile load increments the sequence counter. Handlers for older
+            // sequences will clean up and ignore their results to avoid races.
+            const thisLoadSeq = ++_radarLoadSeq;
+
             // Clean up any existing layer/source with same ID
-            if (map.getLayer(newLayerId)) map.removeLayer(newLayerId);
-            if (map.getSource(newSourceId)) map.removeSource(newSourceId);
+            try { if (map.getLayer(newLayerId)) map.removeLayer(newLayerId); } catch {}
+            try { if (map.getSource(newSourceId)) map.removeSource(newSourceId); } catch {}
 
             // Add new source and layer
             map.addSource(newSourceId, {
@@ -317,20 +336,41 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             // Wait for new tiles to load before fading in
             const onSourceData = (e) => {
                 if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
+                // If this handler is for an outdated load, clean up the created
+                // layer/source and ignore the event.
+                if (thisLoadSeq !== _radarLoadSeq) {
+                    map.off('sourcedata', onSourceData);
+                    safeRemoveLayerAndSource(newLayerId, newSourceId).catch(() => {});
+                    return;
+                }
 
                 map.off('sourcedata', onSourceData);
 
-                // Fade in the new frame
-                map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                // Fade in the new frame (guard in case the layer was removed concurrently)
+                try {
+                    if (map.getLayer(newLayerId)) {
+                        map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                    }
+                } catch (err) {
+                    console.debug('Could not set paint property for new layer (it may have been removed):', newLayerId);
+                }
 
                 // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===
                 if (_activeBuffer !== -1) {
                     const oldLayerId = _bufferLayers[_activeBuffer];
                     const oldSourceId = _bufferSources[_activeBuffer];
 
-                    // Only try to fade out if the layer still exists
-                    if (map.getLayer(oldLayerId)) {
-                        map.setPaintProperty(oldLayerId, 'raster-opacity', 0);
+                    // Only try to fade out if the layer still exists; protect against races
+                    try {
+                        if (map.getLayer(oldLayerId)) {
+                            try {
+                                map.setPaintProperty(oldLayerId, 'raster-opacity', 0);
+                            } catch (err) {
+                                console.debug('Failed to set paint property on old layer (likely removed):', oldLayerId);
+                            }
+                        }
+                    } catch (err) {
+                        console.debug('Error while checking old layer existence:', oldLayerId, err.message);
                     }
 
                     // Always clean up source + layer safely (even if layer already gone)
@@ -348,8 +388,14 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
 
             // Optional timeout fallback in case sourcedata never fires
             setTimeout(() => {
-                if (map.getPaintProperty(newLayerId, 'raster-opacity') === 0) {
-                    map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                // Ensure the layer still exists before querying/setting paint properties
+                try {
+                    if (map.getLayer(newLayerId) && map.getPaintProperty(newLayerId, 'raster-opacity') === 0) {
+                        map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                    }
+                } catch (err) {
+                    // If the layer was removed meanwhile, ignore the error
+                    console.debug('Radar timeout fallback: layer missing or unavailable', newLayerId);
                 }
                 map.off('sourcedata', onSourceData);
             }, 8000);

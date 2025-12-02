@@ -372,7 +372,7 @@ function openProductChooser(closeIfAlreadyOpen=false) {
         document.getElementById("mos").classList.add('radartypebtn-selected');
         document.getElementById("products").innerHTML  = `
             <div class="product-item" onclick="radarMode = 'mos'; loadRadar('CONUS');">US Composite Reflectivity</div>
-            <div class="product-item" onclick="loadRadar('CANMOS');">CANADA Reflectivity Mosaic</div>
+            <div class="product-item" onclick="radarMode = 'mos'; loadRadar('CANMOS');">CANADA Reflectivity Mosaic</div>
         `/*    <div class="product-item">Base Reflectivity</div>
             <div class="product-item">Precipitation Classification</div>
             <div class="product-item">Echo Tops</div>
@@ -380,13 +380,6 @@ function openProductChooser(closeIfAlreadyOpen=false) {
     } else if (radarMode == "usnexrad"){
         document.getElementById("usnexrad").classList.add('radartypebtn-selected');
         loadRadarStations();
-        /*document.getElementById("products").innerHTML  = `
-            <div class="product-item">Base Reflectivity</div>
-            <div class="product-item">Base Velocity</div>
-            <div class="product-item">Precipitation Classification</div>
-            <div class="product-item">1hr Precipitation Accumulation</div>
-            <div class="product-item">Total Precipitation Accumulation</div>
-        `*/
         document.getElementById("products").innerHTML  = '<p style="width: 100%; text-align: center; font-weight: bold;">Select a station to view its products.</p>'
     } else if (radarMode == "sat"){
         document.getElementById("sat").classList.add('radartypebtn-selected');
