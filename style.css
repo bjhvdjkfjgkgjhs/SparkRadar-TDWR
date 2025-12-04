@@ -429,6 +429,7 @@ a {
   border: 1px solid gray;
   border-radius: 20px;
   transition-duration: 0.2s;
+  margin-bottom: 10px;
 }
 
 .alertpopupitem:hover{
@@ -593,11 +594,11 @@ a {
 }
 
 #drawingtoolbar.slide-in {
-  animation: slide-in-top 0.3s ease-out forwards;
+  animation: slide-in-bottom 0.3s ease-out forwards;
 }
 
 #drawingtoolbar.slide-out {
-  animation: slide-out-top 0.3s ease-in forwards;
+  animation: slide-out-bottom 0.3s ease-in forwards;
 }
 
 #info.slide-out {
