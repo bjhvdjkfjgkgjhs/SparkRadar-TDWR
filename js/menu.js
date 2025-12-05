@@ -68,7 +68,7 @@ function updateSettingsUI() {
     document.getElementById('set-notifications').style.background = notificationsEnabled ? '#27beff' : '#333';
     document.getElementById('set-sparkalerts').style.background = sparkalertsEnabled ? '#27beff' : '#333';
 
-    document.dispatchEvent(new Event('DOMContentLoaded')); // Refresh alert settings UI
+    refreshAlertSettings();
 }
 
 // Initial UI update
@@ -118,7 +118,7 @@ function resetSettings() {
 }
 
 // Alert settings
-setTimeout(() => {
+function refreshAlertSettings() {
     const alertsSubmenu = document.getElementById('sett-alerts');
 
     var alertsToPopulate = {}
@@ -218,7 +218,9 @@ setTimeout(() => {
     lastDiv.style.borderRadius = '5px 5px 20px 20px';
 
     console.log("Populated alert settings submenu with " + iterations + " alert types.");
-}, 3000);
+}
+
+setTimeout(() => refreshAlertSettings(), 8000);
 
 // Handle alert toggling and color selectors 
 document.addEventListener('click', (e) => {

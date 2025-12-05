@@ -59,11 +59,13 @@ if (first) {
 
 // Function to guess if the user is on mobile
 function isMobile() {
-    return window.innerWidth < 800;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 if (isMobile()) {
-    displayboxcloser.style.display = 'none';
+    document.getElementById('displayboxcloser').style.display = 'none';
+} else {
+    document.getElementById('displayboxcloser').style.display = 'block';
 }
 
 // Function to calculate relative time to a given ISO timestamp

@@ -219,6 +219,7 @@ function safeRemoveLayerAndSource(layerId, sourceId) {
 }
 
 
+var firstUse = true;
 
 function loadRadar(station = radarStation, isAnim = false, force = false) {
     station = station.toUpperCase();
@@ -280,6 +281,11 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             const minIdx = Math.max(0, maxIdx - 12);
             document.getElementById("animationSlider").max = maxIdx;
             document.getElementById("animationSlider").min = minIdx;
+
+            if (firstUse) {
+                document.getElementById("animationSlider").value = maxIdx;
+                firstUse = false;
+            }
 
             frameidx = parseInt(document.getElementById("animationSlider").value);
 

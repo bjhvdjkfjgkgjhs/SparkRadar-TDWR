@@ -364,6 +364,7 @@ function loadAlerts(force = false) {
                     'type': 'geojson',
                     'data': {
                         'type': 'Feature',
+                        'id': `alert_${alert.id}`,
                         'geometry': {
                             'type': 'Polygon',
                             'coordinates': coordinates
@@ -468,6 +469,7 @@ function loadAlerts(force = false) {
                 'type': 'geojson',
                 'data': {
                     'type': 'Feature',
+                    'id': `alert_${alert.id}`,
                     'geometry': {
                         'type': 'Polygon',
                         'coordinates': coordinates
@@ -577,6 +579,7 @@ function loadSparkAlerts() {
                 'type': 'geojson',
                 'data': {
                     'type': 'Feature',
+                    'id': `alert_${alert.matchedToken + alert.issueTime}`,
                     'geometry': {
                         'type': 'Polygon',
                         'coordinates': coordinates
