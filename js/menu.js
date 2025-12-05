@@ -118,7 +118,7 @@ function resetSettings() {
 }
 
 // Alert settings
-document.addEventListener('DOMContentLoaded', () => {
+setTimeout(() => {
     const alertsSubmenu = document.getElementById('sett-alerts');
 
     var alertsToPopulate = {}
@@ -168,21 +168,19 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
     }
 
-    alertsSubmenu.innerHTML = ''; // Clear existing content
-
     var iterations = 0;
     var lastDiv = null;
 
     for (const [alertType, settings] of Object.entries(alertsToPopulate)) {
-        iterations ++;
+        iterations++;
 
         const alertDiv = document.createElement('div');
         alertDiv.style.borderRadius = (iterations == 1) ? '20px 20px 5px 5px' : '5px';
         alertDiv.className = 'setting-checkbox';
         alertDiv.display = 'flex';
-        
+
         alertDiv.innerHTML = `
-            <div class="styledcheckbox alertitem" style="width: 38px; background: ${settings.enabled ? '#27beff' : '#333'};" id="set-alert-${alertType.replace(/\s+/g, '-')}"></div>
+            <div class="styledcheckbox alertitem" pointer-events: all; style="width: 38px; background: ${settings.enabled ? '#27beff' : '#333'};" id="set-alert-${alertType.replace(/\s+/g, '-')}"></div>
             <p style="width: 100%; margin-right: 10px;">${alertType}</p>
             <div class="alertcolor" id="set-color-${alertType.replace(/\s+/g, '-')}" style="color: ${readableTextColor(settings.color)}; background-color: ${settings.color}; cursor: pointer;">c</div>
         `;
@@ -220,16 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     lastDiv.style.borderRadius = '5px 5px 20px 20px';
 
     console.log("Populated alert settings submenu with " + iterations + " alert types.");
-});
-
-
-// Sometimes DOMContentLoaded doesn't fire
-setTimeout(() => {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        const event = new Event('DOMContentLoaded');
-        document.dispatchEvent(event);
-        console.warn("Manually dispatched DOMContentLoaded event to populate alert settings.");
-    }
 }, 3000);
 
 // Handle alert toggling and color selectors 
