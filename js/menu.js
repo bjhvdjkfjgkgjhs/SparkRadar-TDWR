@@ -96,6 +96,27 @@ function togglesparkalerts() {
     firstuse1 = false;
 }
 
+function resetSettings() {
+    setTimeout(() => {
+        document.body.appendChild(document.createElement('div')).innerHTML = `
+            <div id="areyousure" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                <div style="background: #222; display: flex; color: white; flex-direction: column; color: white; padding: 20px; border-radius: 10px; max-width: 400px; text-align: center; box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 6px 6px;">
+                    <div>
+                        <h2>Are you sure?</h2>
+                    </div>
+                    <p style="font-size: medium; margin-bottom: 20px;">You cannot return to your previous settings. This will clear all alert customizations, stored variables, and settings.</a>
+                    </p>
+
+                    <div style="display: flex; flex-direction: row;">
+                        <button onclick="document.getElementById('areyousure').remove();" style="width: 100%; background: #27beff; padding: 10px 20px; margin-right: 3px; border: none; color: black; font-size: large; cursor: pointer;">Nevermind</button>
+                        <button onclick="localStorage.clear(); window.location.reload();" style="width: 100%; background: #ff2121; padding: 10px 20px; margin-left: 3px; border: none; color: black; font-size: large; cursor: pointer;">Clear settings</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 100); 
+}
+
 // Alert settings
 document.addEventListener('DOMContentLoaded', () => {
     const alertsSubmenu = document.getElementById('sett-alerts');
