@@ -626,7 +626,7 @@ a {
 }
 
 .setting-submenu.expanded {
-  max-height: 90vh;
+  max-height: 70vh;
   overflow-y: auto;
 }
 
