@@ -150,6 +150,12 @@ p {
   pointer-events: none;
 }
 
+#menu-settings {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
 
 .menubutton {
   display: flex;
@@ -617,26 +623,35 @@ a {
   animation: slide-in-bottom 0.3s ease-out forwards;
 }
 
+/* Settings submenu expand/collapse animations */
+.setting-submenu {
+  max-height: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+  width: 100%;
+  flex-shrink: 1;
+}
+
 .setting-submenu.expanded {
   max-height: 70vh;
-  min-height: 0;
-  /* Important for flex */
   overflow-y: auto;
   overflow-x: hidden;
   pointer-events: all;
 
-  /* Modern momentum scrolling (required on iOS/Android) */
   -webkit-overflow-scrolling: auto;
-  /* Fallback, harmless */
   overscroll-behavior: contain;
-  /* Prevents pull-to-refresh interference */
   touch-action: pan-y;
-  /* Explicitly allow vertical touch scrolling */
-
-  /* Ensure content can trigger scroll */
   -webkit-transform: translateZ(0);
-  /* Promote to composited layer */
   transform: translateZ(0);
+}
+
+.setting-submenu-toggle i {
+  transition: transform 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+}
+
+.setting-submenu-toggle.rotated i {
+  transform: rotate(180deg);
 }
 
 .alertcolor {
