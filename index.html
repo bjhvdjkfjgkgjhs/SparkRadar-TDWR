@@ -128,24 +128,50 @@
             </button>
         </div>
 
-        <div id="menu-settings" style="display: none; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); overflow-y: auto;">
-            <p style="font-size: large; font-weight: bold; margin: 10px;">Notifications</p>
-            <div style="border-radius: 20px 20px 5px 5px;" onclick="toggleNotifications()" class="setting-checkbox">
-                <div class="styledcheckbox" id="set-notifications"></div>
-                <p>Notifications for my location</p>
-            </div>
-            <div style="border-radius: 5px 5px 20px 20px;" onclick="sendNotification()" class="setting-checkbox">
-                <p style="color: #27beff;">Send test notification</p>
+        <div id="menu-settings" style="display: none; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); scrollbar-width: none; overflow-y: auto;">
+            <div style="display: flex; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Alerts</p>
+                <button onclick="help('alertsettings')" style="border: none; background: none;"><i class="ti ti-help" style="font-size: 24px;"></i></button>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-alerts')" style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
             </div>
 
-            <p style="font-size: large; font-weight: bold; margin: 10px; padding-top: 10px;">Experimental features</p>
-            <div style="border-radius: 20px 20px 5px 5px;" onclick="togglesparkalerts()" class="setting-checkbox">
-                <div class="styledcheckbox" id="set-sparkalerts"></div>
-                <p>SparkAlerts</p>
-                <div style="color: black; background: #ffcc00; border-radius: 100px; margin-left: 10px; padding: 5px 10px; font-weight: bold;">BETA</div>
+            <div id="sett-alerts" class="setting-submenu" style="display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none; border-radius: 20px;">
+                <!--Dynamic alerts: added in menu.js...-->
             </div>
-            <div style="border-radius: 5px 5px 20px 20px;" class="setting-checkbox">
-                <p style="color: #27beff;">SparkAlerts adds alerts within seconds of being issued from the NWWS-OI. Subject to changes.</p>
+
+
+            <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Notifications</p>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-notifications')"
+                    style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+            
+            <div id="sett-notifications" class="setting-submenu" style="display: flex; flex-direction: column; scrollbar-width: none; overflow-y: auto;">
+                <div style="border-radius: 20px 20px 5px 5px;" onclick="toggleNotifications()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-notifications"></div>
+                    <p>Notifications for my location</p>
+                </div>
+                <div style="border-radius: 5px 5px 20px 20px;" onclick="sendNotification()" class="setting-checkbox">
+                    <p style="color: #27beff;">Send test notification</p>
+                </div>
+            </div>
+            
+
+
+            <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Experimental Features</p>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-experimental')" style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+
+            <div id="sett-experimental" class="setting-submenu" style="display: flex; flex-direction: column; overflow-y: auto;">
+                <div style="border-radius: 20px 20px 5px 5px;" onclick="togglesparkalerts()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-sparkalerts"></div>
+                    <p>SparkAlerts</p>
+                    <div style="color: black; background: #ffcc00; border-radius: 100px; margin-left: 10px; padding: 5px 10px; font-weight: bold;">BETA</div>
+                </div>
+                <div style="border-radius: 5px 5px 20px 20px;" class="setting-checkbox">
+                    <p style="color: #27beff;">SparkAlerts adds alerts within seconds of being issued from the NWWS-OI. Subject to changes.</p>
+                </div>
             </div>
         </div>
 

@@ -213,12 +213,25 @@ document.getElementById('expandinfo').addEventListener('click', (event) => {
 });
 
 // Displaybox
-function openDisplaybox(title, color) {
+function openDisplaybox(title, color, helpsection = null) {
     if (newUser && document.getElementById('displayboxcloser').style.display == 'none') {
         document.getElementById('displayboxtip').style.display = 'flex';
         setTimeout(() => { document.getElementById('displayboxtip').style.display = 'none'; }, 5000);
         newUser = false;
     }
+
+    if (helpsection) {
+        if (helpsection == 'alertsettings') {
+            document.getElementById('displayboxbody').innerHTML = `<p style="font-size: medium;">
+            SparkRadar allows you to customize the appearance of alerts on the map.<br><br>
+            Click on the checkbox on the left to hide that alert from the map.<br><br>
+            <strong>C</strong> (Color): Sets the fill color of the alert polygon.<br>
+            <strong>B</strong> (Border): Sets the color of the alert polygon's border.<br>
+            <strong>F</strong> (Flash): Sets the flash color of the alert polygon. To disable flashing for an alert, set this to pure black (#000000)<br>
+            </p>`
+        }
+    }
+
     document.getElementById('displaybox').classList.add('open');
     document.getElementById('displayboxtitle').style.backgroundColor = color;
     document.getElementById('displayboxtitle').style.color = readableTextColor(color);

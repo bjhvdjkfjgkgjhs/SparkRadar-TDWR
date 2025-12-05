@@ -616,3 +616,70 @@ a {
 #toolbar.slide-in {
   animation: slide-in-bottom 0.3s ease-out forwards;
 }
+
+/* Settings submenu expand/collapse animations */
+.setting-submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+  width: 100%;
+}
+
+.setting-submenu.expanded {
+  max-height: 100%;
+}
+
+.setting-submenu-toggle i {
+  transition: transform 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+}
+
+.setting-submenu-toggle.rotated i {
+  transform: rotate(180deg);
+}
+
+.alertcolor {
+  height: 25px;
+  border-radius: 20px 5px 5px 20px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertborder {
+  height: 25px;
+  margin-left: 5px;
+  border-radius: 5px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertflash {
+  height: 25px;
+  margin-left: 5px;
+  border-radius: 5px 20px 20px 5px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
