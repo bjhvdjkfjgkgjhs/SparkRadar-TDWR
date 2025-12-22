@@ -16,16 +16,46 @@ var first = localStorage.getItem('sparkradar_firsttime') === null;
 var newUser = first;
 localStorage.setItem('sparkradar_firsttime', 'false');
 
-// Set up the map
-const map = new maplibregl.Map({
+var mapparams = {
     container: 'map',
     style: 'https://api.maptiler.com/maps/01991750-e542-745a-bb74-f8f5646a978c/style.json?key=UMONrX6MjViuKZoR882u',
     center: [-95, 40],
     zoom: 4,
     projection: 'globe',
     attributionControl: false
-});
+}
 
+// Evaluate the URL parameters
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('mode')) {
+    const modeParam = urlParams.get('mode').toLowerCase();
+    if (modeParam == 'app'){
+        // For viewing fullscreen in the SparkRadarWX app
+        // Nothing changes for now
+        console.log("Running in app mode.");
+
+    } else if (modeParam == 'preview') {
+        // For embedding a preview of the new radar, originally for SparkRadarWX app
+        // Hide toolbar and info box
+        document.getElementById('toolbar').style.display = 'none';
+        document.getElementById('info').style.display = 'none';
+        console.log("Running in preview mode.");
+    }
+}
+if (urlParams.has('lat') && urlParams.has('lon')) {
+    const lat = parseFloat(urlParams.get('lat'));
+    const lon = parseFloat(urlParams.get('lon'));
+
+    mapparams.center = [lon, lat];
+    mapparams.zoom = 8;
+}
+if (urlParams.has('zoom')) {
+    const zoom = parseFloat(urlParams.get('zoom'));
+    mapparams.zoom = zoom;
+}
+
+// Set up the map
+const map = new maplibregl.Map(mapparams);
 
 // Variables
 var labelLayerId;
@@ -169,9 +199,12 @@ function viewAlertDetails(id) {
 function resizeListener() {
     // DEBUGGING
     console.debug('Viewport size:', window.innerWidth, 'x', window.innerHeight);
+    var urlParams = new URLSearchParams(window.location.search);
 
-    if (window.innerWidth < 800) {
+    if (window.innerWidth < 800 && !urlParams.has('mode') ) {
         document.getElementById('attribution').style.bottom = '80px';
+    } else if ( urlParams.get('mode').toLowerCase() == 'preview' ){
+        document.getElementById('attribution').style.bottom = '10px';
     }
 }
 
