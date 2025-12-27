@@ -24,6 +24,8 @@ var mapparams = {
     projection: 'globe',
     attributionControl: false
 }
+var locationtoaddtomap = null;
+var appmode = false;
 
 // Evaluate the URL parameters
 var urlParams = new URLSearchParams(window.location.search);
@@ -31,14 +33,21 @@ if (urlParams.has('mode')) {
     const modeParam = urlParams.get('mode').toLowerCase();
     if (modeParam == 'app'){
         // For viewing fullscreen in the SparkRadarWX app
-        // Nothing changes for now
+        // MNinor adjustments to the UI
+        appmode = true;
         console.log("Running in app mode.");
+
+        document.getElementById('geolocate').style.display = 'none';
+        document.getElementById('menu-about').style.display = 'none';
+        document.getElementById('menu-notifications-header').innerHTML = 'Radar Notifications';
 
     } else if (modeParam == 'preview') {
         // For embedding a preview of the new radar, originally for SparkRadarWX app
-        // Hide toolbar and info box
+        // Hide toolbar, info box, and expanded attribution
         document.getElementById('toolbar').style.display = 'none';
         document.getElementById('info').style.display = 'none';
+        document.getElementById('attributionText').style.display = 'none';
+
         console.log("Running in preview mode.");
     }
 }
@@ -48,6 +57,8 @@ if (urlParams.has('lat') && urlParams.has('lon')) {
 
     mapparams.center = [lon, lat];
     mapparams.zoom = 8;
+
+    locationtoaddtomap = [lon, lat];
 }
 if (urlParams.has('zoom')) {
     const zoom = parseFloat(urlParams.get('zoom'));
@@ -63,11 +74,35 @@ var labelLayer;
 map.on('load', () => {
     labelLayer = map.getStyle().layers.find(l => l.id.includes('label') && l.type === 'symbol');
     labelLayerId = labelLayer ? labelLayer.id : undefined;
+
+    if (locationtoaddtomap) {
+        map.addSource('location-marker', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: locationtoaddtomap
+                }
+            }
+        });
+        map.addLayer({
+            id: 'location-marker',
+            type: 'circle',
+            source: 'location-marker',
+            paint: {
+                'circle-radius': 10,
+                'circle-color': '#2a7fff',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#fff'
+            }
+        });
+    }
 });
 
 
 // Welcome dialog for first-time users
-if (first) {
+if (first && !appmode) {
     setTimeout(() => {
         document.body.appendChild(document.createElement('div')).innerHTML = `
             <div id="welcomedialog" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;">
