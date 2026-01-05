@@ -33,12 +33,12 @@ if (urlParams.has('mode')) {
     const modeParam = urlParams.get('mode').toLowerCase();
     if (modeParam == 'app'){
         // For viewing fullscreen in the SparkRadarWX app
-        // MNinor adjustments to the UI
+        // Minor adjustments to the UI
         appmode = true;
         console.log("Running in app mode.");
 
         document.getElementById('geolocate').style.display = 'none';
-        document.getElementById('menu-about').style.display = 'none';
+        document.getElementById('menu-about-btn').style.display = 'none';
         document.getElementById('menu-notifications-header').innerHTML = 'Radar Notifications';
 
     } else if (modeParam == 'preview') {
@@ -238,8 +238,10 @@ function resizeListener() {
 
     if (window.innerWidth < 800 && !urlParams.has('mode') ) {
         document.getElementById('attribution').style.bottom = '80px';
-    } else if ( urlParams.get('mode').toLowerCase() == 'preview' ){
-        document.getElementById('attribution').style.bottom = '10px';
+    } else if ( urlParams.has('mode') ) {
+        if ( urlParams.get('mode').toLowerCase() == 'preview' ){
+            document.getElementById('attribution').style.bottom = '10px';
+        }
     }
 }
 
