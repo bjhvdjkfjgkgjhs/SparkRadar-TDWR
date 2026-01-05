@@ -3,9 +3,15 @@
 var prevLatestframe = null;
 var radarMode = "mos";
 var radarStation = "CONUS";
+var radarProduct = "SR_BREF";
+var stationTitle = '';
 var radaranimator = null;
 var firstopen = true;
 var frameidx = 0;
+var prevRadarProduct = null;
+var prevStation = null;
+var latestFrameTime = "";
+var _tileLoadSeq = 0; // sequence for tile loads to ignore stale completions
 // Double-buffer for raster animation to avoid blanking when frames load
 var _bufferIndex = 0; // 0 or 1
 var _bufferSources = ['datalayer_a_src', 'datalayer_b_src'];
@@ -101,6 +107,7 @@ function loadRadarStations(onlyremove=false) {
                 map.flyTo({ center: coords });
 
                 radarMode = "station";
+                radarProduct = "SR_BREF"; // Reset to default product when switching stations
                 loadRadar(props.id.slice(-4), false, true);
             });
         })
@@ -221,6 +228,7 @@ function safeRemoveLayerAndSource(layerId, sourceId) {
 var firstUse = true;
 
 function loadRadar(station = radarStation, isAnim = false, force = false) {
+    const requestSeq = ++_radarLoadSeq;
     station = station.toUpperCase();
 
     // === NEW: If station actually changed, reset double buffer state ===
@@ -240,23 +248,24 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
 
     getRadarFrameTimes(station)
         .then(stationFrames => {
+            // If another request started after this one, abort work
+            if (requestSeq !== _radarLoadSeq) {
+                return;
+            }
+
             document.title = "Spark Radar | " + station;
 
             if (station === "CANMOS") {
-                document.getElementById("radarTitle").innerText = "CANADIAN MOSAIC";
+                stationTitle = "CANADIAN MOSAIC";
                 radarMode = "canmos";
             } else if (radarMode === "mos") {
-                document.getElementById("radarTitle").innerText = "CONUS MOSAIC";
+                stationTitle = "CONUS MOSAIC";
             } else {
-                document.getElementById("radarTitle").innerText = station;
-                document.getElementById("products").innerHTML  = `
-                    <div class="product-item">Base Reflectivity</div>
-                    <div class="product-item">Base Velocity</div>
-                    <div class="product-item">Precipitation Classification</div>
-                    <div class="product-item">1hr Precipitation Accumulation</div>
-                    <div class="product-item">Total Precipitation Accumulation</div>
-                    `;
+                stationTitle = station;
             }
+
+            document.getElementById("radarTitle").innerHTML = `${stationTitle} - ${latestFrameTime}`;
+
 
             if (!stationFrames || stationFrames.length === 0) {
                 console.error("No radar frames available for station:", station);
@@ -295,13 +304,15 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
 
             console.debug("Times:", times)
 
-            if (!force || latestframe === prevLatestframe) {
+            if (!force && station === prevStation && radarProduct === prevRadarProduct && latestframe === prevLatestframe) {
                 console.log("Radar time unchanged, skipping update.");
                 return;
             }
 
             console.log("Updating radar to frame:", latestframe);
             prevLatestframe = latestframe;
+            prevRadarProduct = radarProduct;
+            prevStation = station;
 
             // Build WMS URL
             var tilesUrl;
@@ -310,7 +321,7 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             } else if (station.toLowerCase() == "conus") {
                 tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
             } else {
-                var layerstr = `${station.toLowerCase()}_sr_bref`;
+                var layerstr = `${station.toLowerCase()}_${radarProduct.toLowerCase()}`;
                 tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/ows?service=WMS&request=GetMap&format=image/png&transparent=true&layers=${layerstr}&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
             }
 
@@ -320,10 +331,8 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             const newBuffer = _bufferIndex;
             const newSourceId = _bufferSources[newBuffer];
             const newLayerId = _bufferLayers[newBuffer];
-
-            // Each actual tile load increments the sequence counter. Handlers for older
-            // sequences will clean up and ignore their results to avoid races.
-            const thisLoadSeq = ++_radarLoadSeq;
+            // Track tile load order so stale completions can be ignored
+            const tileSeq = ++_tileLoadSeq;
 
             // Clean up any existing layer/source with same ID
             try { if (map.getLayer(newLayerId)) map.removeLayer(newLayerId); } catch {}
@@ -346,9 +355,8 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             // Wait for new tiles to load before fading in
             const onSourceData = (e) => {
                 if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
-                // If this handler is for an outdated load, clean up the created
-                // layer/source and ignore the event.
-                if (thisLoadSeq !== _radarLoadSeq) {
+                // If this handler is stale (older request or tiles), clean up its own resources and exit
+                if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
                     map.off('sourcedata', onSourceData);
                     safeRemoveLayerAndSource(newLayerId, newSourceId).catch(() => {});
                     return;
@@ -364,6 +372,9 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 } catch (err) {
                     console.debug('Could not set paint property for new layer (it may have been removed):', newLayerId);
                 }
+
+                latestFrameTime = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                document.getElementById("radarTitle").innerHTML = `${stationTitle} - ${latestFrameTime}`;
 
                 // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===
                 if (_activeBuffer !== -1) {
@@ -398,6 +409,11 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
 
             // Optional timeout fallback in case sourcedata never fires
             setTimeout(() => {
+                // Ignore if another request/tile load superseded this one
+                if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
+                    map.off('sourcedata', onSourceData);
+                    return;
+                }
                 // Ensure the layer still exists before querying/setting paint properties
                 try {
                     if (map.getLayer(newLayerId) && map.getPaintProperty(newLayerId, 'raster-opacity') === 0) {

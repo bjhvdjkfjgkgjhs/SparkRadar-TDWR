@@ -127,11 +127,22 @@ function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-if (isMobile()) {
-    document.getElementById('displayboxcloser').style.display = 'none';
-} else {
-    document.getElementById('displayboxcloser').style.display = 'block';
+function evaluateDispBoxCloser() { 
+    let alwaysshowdispboxcloser = false;
+    try {
+        alwaysshowdispboxcloser = JSON.parse(localStorage.getItem('sparkradar_settings')).alwaysshowdispboxcloser || false;
+    } catch (e) {
+        alwaysshowdispboxcloser = false;
+    }
+
+    if (isMobile() || alwaysshowdispboxcloser) {
+        document.getElementById('displayboxcloser').style.display = 'none';
+    } else {
+        document.getElementById('displayboxcloser').style.display = 'block';
+    }
 }
+
+evaluateDispBoxCloser();
 
 // Function to calculate relative time to a given ISO timestamp
 function isoTimeUntil(isoTimestamp) {
@@ -320,13 +331,24 @@ function closeDisplaybox() {
     const displaybox = document.getElementById('displaybox');
     if (!header || !displaybox) return;
 
+    // Only allow drag-to-close when on mobile AND the user has not chosen to always show the close button
+    function allowDragClose() {
+        let alwaysShow = false;
+        try {
+            alwaysShow = JSON.parse(localStorage.getItem('sparkradar_settings')).alwaysshowdispboxcloser || false;
+        } catch (e) {
+            alwaysShow = false;
+        }
+        return isMobile() && !alwaysShow;
+    }
+
     let startY = null;
     let currentTranslate = 0;
     let isDragging = false;
     let origTransition = displaybox.style.transition || '';
 
     function onTouchStart(e) {
-        if (!isMobile()) return;
+        if (!allowDragClose()) return;
         if (!displaybox.classList.contains('open')) return; // only when open
         const t = e.touches && e.touches[0];
         if (!t) return;
@@ -466,6 +488,21 @@ function openProductChooser(closeIfAlreadyOpen=false) {
         document.getElementById("usnexrad").classList.add('radartypebtn-selected');
         loadRadarStations();
         document.getElementById("products").innerHTML  = '<p style="width: 100%; text-align: center; font-weight: bold;">Select a station to view its products.</p>'
+    } else if (radarMode == "station"){
+        document.getElementById("usnexrad").classList.add('radartypebtn-selected');
+        loadRadarStations();
+        
+        const products = [
+            { code: 'SR_BREF', name: 'Base Reflectivity' },
+            { code: 'SR_BVEL', name: 'Base Velocity' },
+            { code: 'BDHC', name: 'Precipitation Classification' },
+            { code: 'BOHA', name: '1hr Precipitation Accumulation' },
+            { code: 'BDSA', name: 'Total Precipitation Accumulation' }
+        ];
+        
+        document.getElementById("products").innerHTML = products.map(p => 
+            `<div class="product-item ${radarProduct === p.code ? 'product-selected' : ''}" onclick="radarProduct='${p.code}'; loadRadar(radarStation, false, true); openProductChooser(true);">${p.name}</div>`
+        ).join('');
     } else if (radarMode == "sat"){
         document.getElementById("sat").classList.add('radartypebtn-selected');
         /*document.getElementById("products").innerHTML  = `

@@ -325,6 +325,12 @@ p {
   background-color: rgba(20, 20, 20, 0.3);
 }
 
+.product-selected {
+  background-color: #27beff !important;
+  color: black !important;
+  border-color: #27beff !important;
+}
+
 
 button {
   background: transparent;

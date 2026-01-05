@@ -63,12 +63,39 @@ function opensettingdialog(id) {
 // Settings
 var notificationsEnabled = localStorage.getItem('sparkradar_notifications') === 'true';
 var sparkalertsEnabled = localStorage.getItem('sparkradar_sparkalerts') === 'true';
+var settingsdata = localStorage.getItem('sparkradar_settings');
+
+var defaultSettings = {
+    'alwaysshowdispboxcloser': true,
+};
+
+// Verify all settings items exist
+for (const [key, value] of Object.entries(defaultSettings)) {
+    if (settingsdata) {
+        const parsedSettings = JSON.parse(settingsdata);
+        if (!(key in parsedSettings)) {
+            parsedSettings[key] = value;
+            localStorage.setItem('sparkradar_settings', JSON.stringify(parsedSettings));
+            settingsdata = JSON.stringify(parsedSettings);
+        }
+    }
+}
+
+if (!settingsdata) {
+    localStorage.setItem('sparkradar_settings', JSON.stringify(defaultSettings));
+    settingsdata = JSON.stringify(defaultSettings);
+}
+
+settingsdata = JSON.parse(settingsdata);
 
 function updateSettingsUI() {
     document.getElementById('set-notifications').style.background = notificationsEnabled ? '#27beff' : '#333';
     document.getElementById('set-sparkalerts').style.background = sparkalertsEnabled ? '#27beff' : '#333';
+    document.getElementById('set-dispboxcloser').style.background = settingsdata.alwaysshowdispboxcloser ? '#27beff' : '#333';
 
     refreshAlertSettings();
+
+    console.log("Settings UI updated.");
 }
 
 // Initial UI update
@@ -94,6 +121,13 @@ function togglesparkalerts() {
     }
     updateSettingsUI();
     firstuse1 = false;
+}
+
+function toggledispboxcloser() {
+    settingsdata.alwaysshowdispboxcloser = !settingsdata.alwaysshowdispboxcloser;
+    localStorage.setItem('sparkradar_settings', JSON.stringify(settingsdata));
+    evaluateDispBoxCloser();
+    updateSettingsUI();
 }
 
 function resetSettings() {

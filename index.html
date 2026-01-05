@@ -170,7 +170,7 @@
 
 
             <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
-                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Experimental Features</p>
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Advanced</p>
                 <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-experimental')" style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
             </div>
 
@@ -180,10 +180,13 @@
                     <p>SparkAlerts</p>
                     <div style="color: black; background: #ffcc00; border-radius: 100px; margin-left: 10px; padding: 5px 10px; font-weight: bold;">BETA</div>
                 </div>
-                <div style="border-radius: 5px 5px 20px 20px;" class="setting-checkbox">
-                    <p style="color: #27beff;">SparkAlerts adds alerts within seconds of being issued from the NWWS-OI. Subject to changes.</p>
+
+                <div style="border-radius: 5px 5px 20px 20px;" onclick="toggledispboxcloser()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-dispboxcloser"></div>
+                    <p>Always show displaybox closer button</p>
                 </div>
             </div>
+            
         </div>
 
         <div id="menu-about"
