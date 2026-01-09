@@ -272,6 +272,7 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
 
             if (!stationFrames || stationFrames.length === 0) {
                 console.error("No radar frames available for station:", station);
+                document.getElementById("liveIndicator").style.background = "#ff2121";
                 return;
             }
 
@@ -397,6 +398,15 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                         break;
                     default:
                         document.getElementById("radarProductTitle").innerHTML = radarProduct;
+                }
+
+                // Check if live indicator should be shown
+                // Should be live if viewing latest frame
+                const maxSliderIdx = parseInt(document.getElementById("animationSlider").max);
+                if (frameidx >= maxSliderIdx) {
+                    document.getElementById("liveIndicator").style.background = "#00af00";
+                } else {
+                    document.getElementById("liveIndicator").style.background = "#ffcc00";
                 }
 
                 // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===

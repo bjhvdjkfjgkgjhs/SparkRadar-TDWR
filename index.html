@@ -40,7 +40,10 @@
         <div style="width: 100%; display: flex; align-items: flex-start; justify-content: space-between;">
             <button id="menuBtn" title="Menu"> <i class="ti ti-menu-2"></i></button>
             <div style="display: flex; flex-direction: column;">
-                <span id="radarTitle" style="text-align: center; font-size: large; width: 100%; font-weight: 600;">CONUS MOSAIC</span>
+                <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                    <span id="radarTitle" style="text-align: center; font-size: large; width: 100%; font-weight: 600;">CONUS MOSAIC</span>
+                    <div id="liveIndicator" style="display: inline-block; margin-left: 10px; width: 17px; height: 15px; background: #00af00; border-radius: 100px; animation: pulse 2s infinite;"></div>
+                </div>
                 <span onclick="openProductChooser(true);" id="radarProductTitle" style="text-align: center; cursor: pointer; font-size: medium; color: #27beff; width: 100%; font-weight: 600;">Base Reflectivity</span>
             </div>
             <button id="expandinfo" title="Expand"> <i class="ti ti-chevron-down"></i></button>
