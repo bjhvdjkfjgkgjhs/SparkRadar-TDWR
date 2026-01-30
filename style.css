@@ -717,3 +717,19 @@ a {
   align-items: center;
   justify-content: center;
 }
+
+.popupbutton {
+    background: rgb(20, 20, 20, 0.3);
+    color: white;
+    border: 1px solid gray;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 20px;
+    padding: 15px;
+    transition-duration: 0.2s;
+    cursor: pointer;
+}
+
+.popupbutton:hover {
+  border: 1px solid #27beff !important;
+}

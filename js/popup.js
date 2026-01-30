@@ -1,9 +1,18 @@
 // Popups
 let popupLngLat = null;
 
+// Suppress popups briefly during zoom/double-tap gestures
+let suppressPopupUntil = 0;
+try {
+    map.on('zoomstart', () => { suppressPopupUntil = Date.now() + 800; });
+    map.on('zoomend', () => { suppressPopupUntil = Date.now() + 300; });
+    map.on('dblclick', () => { suppressPopupUntil = Date.now() + 800; });
+} catch {}
+
 // Occasionally, map.on('click') throws an error on page load, which makes no sense
 try {
-    map.on('click', (e) => {
+    map.on('click', async (e) => {
+        if (Date.now() < suppressPopupUntil) { return }
         // If we are trying to measure something, do not open a popup
         if (measureBtn.classList.contains('toolbtn-active')) { return }
 
@@ -79,13 +88,15 @@ try {
                         </div>
                     `)
                 }
-            })
+            });
             content = `
                 <div style="height: 100%; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column;">
-                    ${alertsUnderClick.reverse().join('<br style="height: 5px;">')}
+                    <h2 style="margin: 10px; margin-top: 5px;">Point (${e.lngLat.lat.toFixed(3)}, ${e.lngLat.lng.toFixed(3)})</h2>
+                    ${alertsUnderClick.reverse().join('')}
                 </div>
                 `;
         } else {
+            // No alerts here
             content = null;
         }
 

@@ -127,6 +127,14 @@ function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+// Check if the user is on mobile, if so use pop out alert color chooser
+// See GitHub issue #7, in progress
+/*
+if (inMobile()){
+    document.getElementById("alertsopenbtn").classList.remove("ti-chevron-down");
+    document.getElementById("alertsopenbtn").classList.add("ti-window-maximize");
+}*/
+
 function evaluateDispBoxCloser() { 
     let alwaysshowdispboxcloser = false;
     try {

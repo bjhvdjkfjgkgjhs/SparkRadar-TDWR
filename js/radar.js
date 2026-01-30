@@ -270,7 +270,8 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 stationTitle = station;
             }
 
-            document.getElementById("radarTitle").innerHTML = `${stationTitle} · ${latestFrameTime}`;
+            document.getElementById("radarTitle").innerHTML = stationTitle
+            document.getElementById("radarTitle2").innerHTML = latestFrameTime;
 
 
             if (!stationFrames || stationFrames.length === 0) {
@@ -381,7 +382,8 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 }
 
                 latestFrameTime = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                document.getElementById("radarTitle").innerHTML = `${stationTitle} · ${latestFrameTime}`;
+                document.getElementById("radarTitle").innerHTML = stationTitle;
+                document.getElementById("radarTitle2").innerHTML = latestFrameTime;
                 
                 switch (radarProduct) {
                     case "SR_BREF":
@@ -407,9 +409,9 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 // Should be live if viewing latest frame
                 const maxSliderIdx = parseInt(document.getElementById("animationSlider").max);
                 if (frameidx >= maxSliderIdx) {
-                    document.getElementById("liveIndicator").style.background = "#00af00";
+                    document.getElementById("radarTitle2").style.color = "#00af00";
                 } else {
-                    document.getElementById("liveIndicator").style.background = "#ffcc00";
+                    document.getElementById("radarTitle2").style.color = "#ffcc00";
                 }
 
                 // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===

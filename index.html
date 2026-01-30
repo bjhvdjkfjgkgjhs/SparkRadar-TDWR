@@ -39,12 +39,13 @@
     <div class="mapelement" id="info">
         <div style="width: 100%; display: flex; align-items: flex-start; justify-content: space-between;">
             <button id="menuBtn" title="Menu"> <i class="ti ti-menu-2"></i></button>
-            <div style="display: flex; flex-direction: column;">
+            <div style="width: 100%; display: flex; flex-direction: column;">
                 <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                    <span id="radarTitle" style="text-align: center; font-size: large; width: 100%; font-weight: 600;">CONUS MOSAIC</span>
-                    <div id="liveIndicator" style="display: inline-block; margin-left: 10px; width: 17px; height: 15px; background: #00af00; border-radius: 100px; animation: pulse 2s infinite;"></div>
+                    <span id="radarTitle" style="text-shadow: 2px 2px 6px #202020; text-align: right; font-size: large; font-weight: 600;">CONUS MOSAIC</span>
+                    <span style="margin: 5px; font-size: large; font-weight: 600;"> · </span>
+                    <span id="radarTitle2" style="text-shadow: 2px 2px 6px #202020; text-align: left; font-size: large; font-weight: 600;">LATEST</span>
                 </div>
-                <span onclick="openProductChooser(true);" id="radarProductTitle" style="text-align: center; cursor: pointer; font-size: medium; color: #27beff; width: 100%; font-weight: 600;">Base Reflectivity</span>
+                <span onclick="openProductChooser(true);" id="radarProductTitle" style="text-shadow: 2px 2px 6px #202020; text-align: center; cursor: pointer; font-size: medium; color: #27beff; width: 100%; font-weight: 600;">Base Reflectivity</span>
             </div>
             <button id="expandinfo" title="Expand"> <i class="ti ti-chevron-down"></i></button>
         </div>
@@ -135,7 +136,7 @@
                 <div style="display: flex; flex-direction: row; justify-content: center;;">
                 <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Alerts</p>
                 <button onclick="help('alertsettings')" style="border: none; background: none;"><i class="ti ti-help" style="font-size: 24px;"></i></button>
-                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-alerts')" style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-alerts')" style="border: none; background: none;"><i id="alertsopenbtn" class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
             </div>
 
             <div id="sett-alerts" class="setting-submenu" style="pointer-events: auto; touch-action: pan-y; display: flex; flex-direction: column; scrollbar-width: none; border-radius: 20px; flex-shrink: 1;"></div>
