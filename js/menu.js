@@ -93,6 +93,8 @@ function updateSettingsUI() {
     document.getElementById('set-sparkalerts').style.background = sparkalertsEnabled ? '#27beff' : '#333';
     document.getElementById('set-dispboxcloser').style.background = settingsdata.alwaysshowdispboxcloser ? '#27beff' : '#333';
 
+    document.getElementById('set-sparknexradurl').value = settingsdata.sparknexradurl || 'https://radar.sparkradar.app';
+
     refreshAlertSettings();
 
     console.log("Settings UI updated.");
@@ -128,6 +130,36 @@ function toggledispboxcloser() {
     localStorage.setItem('sparkradar_settings', JSON.stringify(settingsdata));
     evaluateDispBoxCloser();
     updateSettingsUI();
+}
+
+function setSparkNexradURL() {
+    const urlInput = document.getElementById('set-sparknexradurl');
+    const url = urlInput.value.trim();
+
+    if (url && !/^https?:\/\/.+/.test(url)) {
+        sendNotification("SparkNEXRAD URL invalid", "Please enter a valid URL", "x", "#ffcc00");
+        return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    fetch(url + '/', { signal: controller.signal }).then(response => {
+        clearTimeout(timeoutId);
+        return response.status;
+    }).then(code => {
+        if (code === 200) {
+            settingsdata.sparknexradurl = url;
+            localStorage.setItem('sparkradar_settings', JSON.stringify(settingsdata));
+            updateSettingsUI();
+            sendNotification("SparkNEXRAD URL updated", `Super-Res radar will now load from: ${url}`, "check", "#00af00");
+        } else {
+            throw new Error(code);
+        }
+    }).catch(error => {
+        clearTimeout(timeoutId);
+        sendNotification("SparkNEXRAD URL invalid", `${url} responded with error ${error.message}. Ensure it is running.`, "x", "#ffcc00");
+    });
 }
 
 function resetSettings() {

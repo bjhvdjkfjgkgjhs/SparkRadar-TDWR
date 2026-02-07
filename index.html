@@ -51,7 +51,7 @@
         </div>
 
         <div class="info-content" id="productChooser" style="display: flex; flex-direction: column; align-items: center;">
-            <div style="width: 90%; padding: 10px; border: 1px solid gray; border-radius: 20px; background: rgb(20, 20, 20); margin-top: 5px; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 90%; max-height: 250px; padding: 10px; border: 1px solid gray; border-radius: 20px; background: rgb(20, 20, 20); margin-top: 5px; display: flex; flex-direction: column; align-items: center;">
                 <div style="width: 100%; margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
                     <button onclick="closeProductChooser();" title="Cancel"> <i class="ti ti-chevron-up"></i></button>
                     <div style="margin-left: 10px; display: flex; flex-direction: row; justify-content: flex-end; width: 100%;">
@@ -60,7 +60,7 @@
                         <button class="radartypebtn" id="sat" onclick="radarMode = 'sat'; openProductChooser()" style="border-radius: 0px 20px 20px 0px;" title="Satellite">SATELLITE</button>
                     </div>
                 </div>
-                <div id="products" style="color: #27beff; width: 100%; display: flex; flex-direction: column"></div>
+                <div id="products" style="scrollbar-width: none; overflow-x: hidden; overflow-y: auto; color: #27beff; width: 100%; display: flex; flex-direction: column"></div>
             </div>
         </div>
 
@@ -185,9 +185,14 @@
                     <div style="color: black; background: #ffcc00; border-radius: 100px; margin-left: 10px; padding: 5px 10px; font-weight: bold;">BETA</div>
                 </div>
 
-                <div style="border-radius: 5px 5px 20px 20px;" onclick="toggledispboxcloser()" class="setting-checkbox">
+                <div style="border-radius: 5px;" onclick="toggledispboxcloser()" class="setting-checkbox">
                     <div class="styledcheckbox" id="set-dispboxcloser"></div>
                     <p>Always show displaybox closer button</p>
+                </div>
+
+                <div style="border-radius: 5px 5px 20px 20px;" class="setting-input">
+                    <p style="width: 100%; text-align: left; margin-bottom: 10px;">SparkNEXRAD server</p>
+                    <input id="set-sparknexradurl" onchange="setSparkNexradURL()" type="text" placeholder="https://radar.sparkradar.app" value="https://radar.sparkradar.app" style="width: calc(100% - 20px); padding: 5px; border-radius: 10px; border: 1px solid gray; background: rgb(30, 30, 30); color: white;">
                 </div>
             </div>
             

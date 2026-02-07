@@ -22,6 +22,101 @@ var _bufferLoading = [false, false];
 // Sequence counter to identify the most recent radar load request
 var _radarLoadSeq = 0;
 
+// Function to get color table for super-res products
+function getColorTable(product) {
+    switch (product) {
+        case "SNEX_REF":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -30, 'rgb(0, 0, 20)',
+                5, 'rgb(29, 37, 60)',
+                17.5, 'rgb(89, 155, 171)',
+                22.5, 'rgb(33, 186, 72)',
+                32.5, 'rgb(5, 101, 1)',
+                37.5, 'rgb(251, 252, 0)',
+                42.5, 'rgb(253, 149, 2)',
+                50, 'rgb(253, 38, 0)',
+                60, 'rgb(193, 148, 179)',
+                70, 'rgb(165, 2, 215)',
+                75, 'rgb(135, 255, 253)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_VEL":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -35, 'rgb(0, 255, 0)',
+                -25, 'rgb(0, 200, 0)',
+                -5, 'rgb(0, 100, 0)',
+                0, 'rgb(100, 100, 100)',
+                5, 'rgb(100, 0, 0)',
+                25, 'rgb(200, 0, 0)',
+                35, 'rgb(255, 0, 0)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_CC":
+            return { 
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                0.2, 'rgb(0, 0, 0)',
+                0.7, 'rgb(0, 0, 255)',
+                0.85, 'rgb(0, 255, 0)',
+                0.90, 'rgb(255, 255, 0)',
+                0.95, 'rgb(255, 0, 0)',
+                1.00, 'rgb(150, 0, 150)',
+                1.05, 'rgb(255, 255, 255)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_ZDR":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -8, 'rgb(0, 0, 0)',
+                0, 'rgb(255, 255, 255)',
+                0.5, 'rgb(0, 0, 255)',
+                2, 'rgb(0, 255, 0)',
+                2.5, 'rgb(255, 255, 0)',
+                5, 'rgb(255, 0, 0)',
+                6, 'rgb(150, 0, 150)',
+                8, 'rgb(255, 255, 255)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_SW":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                1, 'rgb(50, 50, 50)',
+                10, 'rgb(100, 100, 100)',
+                20, 'rgb(255, 0, 0)',
+                30, 'rgb(0, 255, 255)',
+                33, 'rgb(150, 255, 255)',
+                40, 'rgb(0, 255, 0)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+    }
+}
+
 // Loads the radar stations
 function loadRadarStations(onlyremove=false) {
     if (onlyremove) {
@@ -124,7 +219,9 @@ function loadRadarStations(onlyremove=false) {
 
 
 // Fetch available radar frame times from the WMS GetCapabilities endpoint
-function getRadarFrameTimes(radarStation) {
+function getRadarFrameTimes(radarStation, superres = false) {
+    if (superres) return Promise.resolve([]); // No frame times for super-res products
+
     let url = null;
 
     if (radarStation.toLowerCase() === "canmos") {
@@ -233,12 +330,12 @@ function safeRemoveLayerAndSource(layerId, sourceId) {
 
 var firstUse = true;
 
-function loadRadar(station = radarStation, isAnim = false, force = false) {
+async function loadRadar(station = radarStation, isAnim = false, force = false) {
     const requestSeq = ++_radarLoadSeq;
     station = station.toUpperCase();
 
-    // === NEW: If station actually changed, reset double buffer state ===
-    if (station != radarStation) {
+    // === NEW: If station or product actually changed, reset double buffer state ===
+    if (station != radarStation || prevRadarProduct !== null && prevRadarProduct !== radarProduct) {
         // Clean both buffers completely
         _bufferSources.forEach((srcId, i) => {
             const lyrId = _bufferLayers[i];
@@ -252,27 +349,28 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
     // Now update the global station variable
     radarStation = station;
 
-    getRadarFrameTimes(station)
-        .then(stationFrames => {
+    // Check is this is a superres product
+    const superres = radarProduct.startsWith("SNEX_");
+
+    // Prepare variables
+    let superresdata = null;
+    let times = [];
+    let latestframe = null;
+
+    try {
+        if (superres) {
+            // Fetch geojson from SparkNEXRAD (use radarProduct, not undefined "product")
+            const resp = await fetch(`https://radar.sparkradar.app/data/${station}/${radarProduct.replace("SNEX_", "")}`);
+            if (!resp.ok) throw new Error(`Failed to load super-res data: ${resp.status}`);
+            const geojson = await resp.json();
+            if (!geojson || geojson.type !== 'FeatureCollection') {
+                throw new Error('Invalid GeoJSON format received from server');
+            }
+            superresdata = geojson;
+        } else {
+            const stationFrames = await getRadarFrameTimes(station, superres);
             // If another request started after this one, abort work
-            if (requestSeq !== _radarLoadSeq) {
-                return;
-            }
-
-            document.title = "Spark Radar | " + station;
-
-            if (station === "CANMOS") {
-                stationTitle = "CANADIAN MOSAIC";
-                radarMode = "canmos";
-            } else if (radarMode === "mos") {
-                stationTitle = "CONUS MOSAIC";
-            } else {
-                stationTitle = station;
-            }
-
-            document.getElementById("radarTitle").innerHTML = stationTitle
-            document.getElementById("radarTitle2").innerHTML = latestFrameTime;
-
+            if (requestSeq !== _radarLoadSeq) return;
 
             if (!stationFrames || stationFrames.length === 0) {
                 console.error("No radar frames available for station:", station);
@@ -280,7 +378,6 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
                 return;
             }
 
-            var times, latestframe;
             if (station === "CANMOS") {
                 const layerData = stationFrames.find(l => l.name === "RADAR_1KM_RRAI") || stationFrames[2];
                 times = layerData?.times || [];
@@ -309,165 +406,241 @@ function loadRadar(station = radarStation, isAnim = false, force = false) {
             if (firstopen && document.getElementById("animationSlider").value == maxIdx) firstopen = false;
 
             latestframe = times[frameidx];
+            document.getElementById("animationtime").innerText = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+    } catch (err) {
+        console.error('Error preparing radar data:', err);
+        return;
+    }
 
-            console.debug("Times:", times)
-
-            if (!force && station === prevStation && radarProduct === prevRadarProduct && latestframe === prevLatestframe) {
+    // If nothing changed, skip (handle superres separately since there's no timestamp)
+    if (!force) {
+        if (!superres) {
+            if (station === prevStation && radarProduct === prevRadarProduct && latestframe === prevLatestframe) {
                 console.log("Radar time unchanged, skipping update.");
                 return;
             }
-
-            console.log("Updating radar to frame:", latestframe);
-            prevLatestframe = latestframe;
-            prevRadarProduct = radarProduct;
-            prevStation = station;
-
-            // Build WMS URL
-            var tilesUrl;
-            if (station.toLowerCase() == "canmos") {
-                tilesUrl = `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`;
-            } else if (station.toLowerCase() == "conus") {
-                tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
-            } else {
-                var layerstr = `${station.toLowerCase()}_${radarProduct.toLowerCase()}`;
-                tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/ows?service=WMS&request=GetMap&format=image/png&transparent=true&layers=${layerstr}&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+        } else {
+            if (station === prevStation && radarProduct === prevRadarProduct && _activeBuffer !== -1) {
+                console.log("Super-res product unchanged, skipping update.");
+                return;
             }
+        }
+    }
 
-            document.getElementById("animationtime").innerText = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+    console.log("Updating radar to frame:", latestframe || '(Super-res)');
+    prevLatestframe = latestframe;
+    prevRadarProduct = radarProduct;
+    prevStation = station;
 
-            // Double buffering
-            const newBuffer = _bufferIndex;
-            const newSourceId = _bufferSources[newBuffer];
-            const newLayerId = _bufferLayers[newBuffer];
-            // Track tile load order so stale completions can be ignored
-            const tileSeq = ++_tileLoadSeq;
+    document.title = "Spark Radar | " + station;
 
-            // Clean up any existing layer/source with same ID
-            try { if (map.getLayer(newLayerId)) map.removeLayer(newLayerId); } catch {}
-            try { if (map.getSource(newSourceId)) map.removeSource(newSourceId); } catch {}
+    if (station === "CANMOS") {
+        stationTitle = "CANADIAN MOSAIC";
+        radarMode = "canmos";
+    } else if (radarMode === "mos") {
+        stationTitle = "CONUS MOSAIC";
+    } else {
+        stationTitle = station;
+    }
 
-            // Add new source and layer
-            map.addSource(newSourceId, {
-                type: "raster",
-                tiles: [tilesUrl],
-                tileSize: radaranimator ? 1024 : 256 // higher res when paused
-            });
+    document.getElementById("radarTitle").innerHTML = stationTitle;
+    document.getElementById("radarTitle2").innerHTML = latestFrameTime;
 
-            map.addLayer({
-                id: newLayerId,
-                type: "raster",
-                source: newSourceId,
-                paint: { "raster-opacity": 0 }
-            }, 'Pier');
+    // Build WMS URL for non-superres products
+    var tilesUrl;
+    if (!superres) {
+        if (station.toLowerCase() == "canmos") {
+            tilesUrl = `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`;
+        } else if (station.toLowerCase() == "conus") {
+            tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+        } else {
+            var layerstr = `${station.toLowerCase()}_${radarProduct.toLowerCase()}`;
+            tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/ows?service=WMS&request=GetMap&format=image/png&transparent=true&layers=${layerstr}&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+        }
+    }
 
-            // Wait for new tiles to load before fading in
-            const onSourceData = (e) => {
-                if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
-                // If this handler is stale (older request or tiles), clean up its own resources and exit
-                if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
-                    map.off('sourcedata', onSourceData);
-                    safeRemoveLayerAndSource(newLayerId, newSourceId).catch(() => {});
-                    return;
-                }
+    // Double buffering
+    const newBuffer = _bufferIndex;
+    const newSourceId = _bufferSources[newBuffer];
+    const newLayerId = _bufferLayers[newBuffer];
+    // Track tile load order so stale completions can be ignored
+    const tileSeq = ++_tileLoadSeq;
 
-                map.off('sourcedata', onSourceData);
+    // Clean up any existing layer/source with same ID
+    try { if (map.getLayer(newLayerId)) map.removeLayer(newLayerId); } catch {}
+    try { if (map.getSource(newSourceId)) map.removeSource(newSourceId); } catch {}
 
-                // Fade in the new frame (guard in case the layer was removed concurrently)
-                try {
-                    if (map.getLayer(newLayerId)) {
-                        map.setPaintProperty(newLayerId, 'raster-opacity', 1);
-                    }
-                } catch (err) {
-                    console.debug('Could not set paint property for new layer (it may have been removed):', newLayerId);
-                }
+    // Add new source and layer
+    let desiredOpacity = 1;
+    if (superres) {
+        map.addSource(newSourceId, {
+            type: 'geojson',
+            data: superresdata
+        });
 
-                latestFrameTime = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                document.getElementById("radarTitle").innerHTML = stationTitle;
-                document.getElementById("radarTitle2").innerHTML = latestFrameTime;
-                
-                switch (radarProduct) {
-                    case "SR_BREF":
-                        document.getElementById("radarProductTitle").innerHTML = "Base Reflectivity";
-                        break;
-                    case "SR_BVEL":
-                        document.getElementById("radarProductTitle").innerHTML = "Base Velocity";
-                        break;
-                    case "BOHA":
-                        document.getElementById("radarProductTitle").innerHTML = "1-hr Accumulated Precipitation";
-                        break;
-                    case "BDSA":
-                        document.getElementById("radarProductTitle").innerHTML = "Storm Total Accumulation";
-                        break;
-                    case "BDHC":
-                        document.getElementById("radarProductTitle").innerHTML = "Precipitation Classification";
-                        break;
-                    default:
-                        document.getElementById("radarProductTitle").innerHTML = radarProduct;
-                }
+        // Clone paint properties so we can animate opacity safely
+        const basePaint = getColorTable(radarProduct) || {};
+        desiredOpacity = basePaint['fill-opacity'] ?? 1;
+        const paintProps = JSON.parse(JSON.stringify(basePaint));
+        paintProps['fill-opacity'] = 0; // start transparent
+        if (!paintProps['fill-outline-color']) paintProps['fill-outline-color'] = 'rgba(0,0,0,0)';
 
-                // Check if live indicator should be shown
-                // Should be live if viewing latest frame
-                const maxSliderIdx = parseInt(document.getElementById("animationSlider").max);
-                if (frameidx >= maxSliderIdx) {
-                    document.getElementById("radarTitle2").style.color = "#00af00";
+        map.addLayer({
+            id: newLayerId,
+            type: 'fill',
+            source: newSourceId,
+            paint: paintProps
+        }, 'Pier');
+    } else {
+        map.addSource(newSourceId, {
+            type: "raster",
+            tiles: [tilesUrl],
+            tileSize: radaranimator ? 1024 : 256 // use higher res when paused (radaranimator null => paused)
+        });
+
+        map.addLayer({
+            id: newLayerId,
+            type: "raster",
+            source: newSourceId,
+            paint: { "raster-opacity": 0 }
+        }, 'Pier');
+    }
+
+    // Wait for new source to load before fading in
+    const onSourceData = (e) => {
+        if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
+        // If this handler is stale (older request or tiles), clean up its own resources and exit
+        if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
+            map.off('sourcedata', onSourceData);
+            safeRemoveLayerAndSource(newLayerId, newSourceId).catch(() => {});
+            return;
+        }
+
+        map.off('sourcedata', onSourceData);
+
+        // Fade in the new frame (guard in case the layer was removed concurrently)
+        try {
+            if (map.getLayer(newLayerId)) {
+                if (superres) {
+                    map.setPaintProperty(newLayerId, 'fill-opacity', desiredOpacity);
                 } else {
-                    document.getElementById("radarTitle2").style.color = "#ffcc00";
+                    map.setPaintProperty(newLayerId, 'raster-opacity', 1);
                 }
+            }
+        } catch (err) {
+            console.debug('Could not set paint property for new layer (it may have been removed):', newLayerId);
+        }
 
-                // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===
-                if (_activeBuffer !== -1) {
-                    const oldLayerId = _bufferLayers[_activeBuffer];
-                    const oldSourceId = _bufferSources[_activeBuffer];
+        if (!superres) {
+            latestFrameTime = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            document.getElementById("radarTitle2").innerHTML = latestFrameTime;
+        } else {
+            document.getElementById("radarTitle2").innerHTML = 'LATEST';
+        }
 
-                    // Only try to fade out if the layer still exists; protect against races
+        switch (radarProduct) {
+            case "SR_BREF":
+                document.getElementById("radarProductTitle").innerHTML = "Base Reflectivity";
+                break;
+            case "SR_BVEL":
+                document.getElementById("radarProductTitle").innerHTML = "Base Velocity";
+                break;
+            case "BOHA":
+                document.getElementById("radarProductTitle").innerHTML = "1-hr Accumulated Precipitation";
+                break;
+            case "BDSA":
+                document.getElementById("radarProductTitle").innerHTML = "Storm Total Accumulation";
+                break;
+            case "BDHC":
+                document.getElementById("radarProductTitle").innerHTML = "Precipitation Classification";
+                break;
+            case "SNEX_REF":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Reflectivity";
+                break;
+            case "SNEX_VEL":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Velocity";
+                break;
+            case "SNEX_CC":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Correlation Coefficient";
+                break;
+            case "SNEX_ZDR":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Differential Reflectivity";
+                break;
+            case "SNEX_SW":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Spectrum Width";
+                break;
+            default:
+                document.getElementById("radarProductTitle").innerHTML = radarProduct;
+        }
+
+        // Check if live indicator should be shown
+        const maxSliderIdx = parseInt(document.getElementById("animationSlider").max);
+        if (frameidx >= maxSliderIdx || superres) {
+            document.getElementById("radarTitle2").style.color = "#00af00";
+        } else {
+            document.getElementById("radarTitle2").style.color = "#ffcc00";
+        }
+
+        // === SAFELY CLEAN UP OLD BUFFER ONLY IF IT EXISTS ===
+        if (_activeBuffer !== -1) {
+            const oldLayerId = _bufferLayers[_activeBuffer];
+            const oldSourceId = _bufferSources[_activeBuffer];
+
+            // Only try to fade out if the layer still exists; protect against races
+            try {
+                if (map.getLayer(oldLayerId)) {
                     try {
-                        if (map.getLayer(oldLayerId)) {
-                            try {
-                                map.setPaintProperty(oldLayerId, 'raster-opacity', 0);
-                            } catch (err) {
-                                console.debug('Failed to set paint property on old layer (likely removed):', oldLayerId);
-                            }
+                        // set appropriate property depending on layer type
+                        const lyrType = map.getLayer(oldLayerId).type;
+                        if (lyrType === 'raster') {
+                            map.setPaintProperty(oldLayerId, 'raster-opacity', 0);
+                        } else {
+                            map.setPaintProperty(oldLayerId, 'fill-opacity', 0);
                         }
                     } catch (err) {
-                        console.debug('Error while checking old layer existence:', oldLayerId, err.message);
+                        console.debug('Failed to set paint property on old layer (likely removed):', oldLayerId);
                     }
-
-                    // Always clean up source + layer safely (even if layer already gone)
-                    safeRemoveLayerAndSource(oldLayerId, oldSourceId).catch(err => {
-                        console.warn("Cleanup warning (safe to ignore):", err.message);
-                    });
                 }
+            } catch (err) {
+                console.debug('Error while checking old layer existence:', oldLayerId, err.message);
+            }
 
-                // Activate new buffer
-                _activeBuffer = newBuffer;
-                _bufferIndex = 1 - _bufferIndex;
-            };
+            // Always clean up source + layer safely (even if layer already gone)
+            safeRemoveLayerAndSource(oldLayerId, oldSourceId).catch(err => {
+                console.warn("Cleanup warning (safe to ignore):", err.message);
+            });
+        }
 
-            map.on('sourcedata', onSourceData);
+        // Activate new buffer
+        _activeBuffer = newBuffer;
+        _bufferIndex = 1 - _bufferIndex;
+    };
 
-            // Optional timeout fallback in case sourcedata never fires
-            setTimeout(() => {
-                // Ignore if another request/tile load superseded this one
-                if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
-                    map.off('sourcedata', onSourceData);
-                    return;
+    map.on('sourcedata', onSourceData);
+
+    // Optional timeout fallback in case sourcedata never fires
+    setTimeout(() => {
+        // Ignore if another request/tile load superseded this one
+        if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
+            map.off('sourcedata', onSourceData);
+            return;
+        }
+        // Ensure the layer still exists before querying/setting paint properties
+        try {
+            if (map.getLayer(newLayerId)) {
+                const lyrType = map.getLayer(newLayerId).type;
+                if (lyrType === 'raster') {
+                    if (map.getPaintProperty(newLayerId, 'raster-opacity') === 0) map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                } else {
+                    if (map.getPaintProperty(newLayerId, 'fill-opacity') === 0) map.setPaintProperty(newLayerId, 'fill-opacity', desiredOpacity);
                 }
-                // Ensure the layer still exists before querying/setting paint properties
-                try {
-                    if (map.getLayer(newLayerId) && map.getPaintProperty(newLayerId, 'raster-opacity') === 0) {
-                        map.setPaintProperty(newLayerId, 'raster-opacity', 1);
-                    }
-                } catch (err) {
-                    // If the layer was removed meanwhile, ignore the error
-                    console.debug('Radar timeout fallback: layer missing or unavailable', newLayerId);
-                }
-                map.off('sourcedata', onSourceData);
-            }, 8000);
-
-        })
-        .catch(error => {
-            console.error("Error loading radar:", error);
-        });
+            }
+        } catch (err) {
+            console.debug('Radar timeout fallback: layer missing or unavailable', newLayerId);
+        }
+        map.off('sourcedata', onSourceData);
+    }, 8000);
 }
 
 // Animation controls

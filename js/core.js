@@ -102,23 +102,8 @@ map.on('load', () => {
 
 
 // Welcome dialog for first-time users
+// Not needed anymore as SparkRadar is no longer new, but will add onboarding in the future
 if (first && !appmode) {
-    setTimeout(() => {
-        document.body.appendChild(document.createElement('div')).innerHTML = `
-            <div id="welcomedialog" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;">
-                <div style="background: #222; display: flex; color: white; flex-direction: column; color: white; padding: 20px; border-radius: 10px; max-width: 400px; text-align: center; box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 6px 6px;">
-                    <div>
-                        <h2>Welcome to the new Spark Radar!</h2>
-                    </div>
-                    <p style="font-size: medium; margin-bottom: 20px;">The new Spark Radar brings significant visual and performance improvements, along with many new features and faster loading times. The new app is still in beta and will contain bugs and missing features. If you prefer to visit the previous version, go to <a href="https://sparkradar.app/legacy" style="color: #27beff;">sparkradar.app/legacy</a>.
-                    </p>
-
-                    <button onclick="document.getElementById('welcomedialog').remove();" style="background: #27beff; padding: 10px 20px; border: none; color: black; font-size: large; cursor: pointer;">Continue</button>
-
-                </div>
-            </div>
-        `;
-    }, 100);
     first = false;
 }
 
@@ -506,12 +491,31 @@ function openProductChooser(closeIfAlreadyOpen=false) {
             { code: 'SR_BVEL', name: 'Base Velocity' },
             { code: 'BDHC', name: 'Precipitation Classification' },
             { code: 'BOHA', name: '1hr Precipitation Accumulation' },
-            { code: 'BDSA', name: 'Total Precipitation Accumulation' }
+            { code: 'BDSA', name: 'Total Precipitation Accumulation' },
         ];
+
+        const superresproducts = [
+            // New: Super-resolution products from SparkNEXRAD
+            { code: 'SNEX_REF', name: 'Base Reflectivity' },
+            { code: 'SNEX_VEL', name: 'Base Velocity' },
+            { code: 'SNEX_CC', name: 'Correlation Coefficient' },
+            { code: 'SNEX_ZDR', name: 'Differential Reflectivity' },
+            // Not working yet? { code: 'SNEX_KDP', name: 'Specific Differential Phase' },
+            { code: 'SNEX_SW', name: 'Spectrum Width' }
+        ];
+
+        document.getElementById("products").innerHTML = '<p style="color: white; width: 100%; text-align: left; font-weight: bold; margin: 10px; font-size: medium;">Standard Products</p>';
         
-        document.getElementById("products").innerHTML = products.map(p => 
+        document.getElementById("products").innerHTML += products.map(p => 
             `<div class="product-item ${radarProduct === p.code ? 'product-selected' : ''}" onclick="radarProduct='${p.code}'; loadRadar(radarStation, false, true); openProductChooser(true);">${p.name}</div>`
         ).join('');
+
+        document.getElementById("products").innerHTML += '<p style="color: white; width: 100%; text-align: left; font-weight: bold; margin: 10px; font-size: medium;">SUPER-RES Products (BETA)</p>';
+
+        document.getElementById("products").innerHTML += superresproducts.map(p => 
+            `<div class="product-item ${radarProduct === p.code ? 'product-selected' : ''}" onclick="radarProduct='${p.code}'; loadRadar(radarStation, false, true); openProductChooser(true);">${p.name}</div>`
+        ).join('');
+
     } else if (radarMode == "sat"){
         document.getElementById("sat").classList.add('radartypebtn-selected');
         /*document.getElementById("products").innerHTML  = `

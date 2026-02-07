@@ -481,7 +481,25 @@ a {
   cursor: pointer;
 }
 
+.setting-input {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  background: rgb(20, 20, 20);
+  border-radius: 20px;
+  margin: 5px;
+  margin-bottom: 0px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 .setting-checkbox p {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.setting-input p {
   font-weight: bold;
   font-size: 1.1em;
 }

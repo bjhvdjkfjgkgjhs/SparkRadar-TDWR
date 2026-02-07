@@ -129,8 +129,8 @@ function refresh() {
     setTimeout(() => { refreshCooldown = false; }, 3000);
 }
 
-// Refresh every 10 seconds
-map.on('load', () => { refresh(); setInterval(refresh, 10000); });
+// Refresh every 20 seconds
+map.on('load', () => { refresh(); setInterval(refresh, 20000); });
 
 // Event listener for refresh button
 document.getElementById("refreshBtn").addEventListener('click', () => {
