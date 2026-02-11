@@ -542,18 +542,23 @@ async function loadRadar(station = radarStation, isAnim = false, force = false) 
         switch (radarProduct) {
             case "SR_BREF":
                 document.getElementById("radarProductTitle").innerHTML = "Base Reflectivity";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/bref.png')";
                 break;
             case "SR_BVEL":
                 document.getElementById("radarProductTitle").innerHTML = "Base Velocity";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/bvel.png')";
                 break;
             case "BOHA":
                 document.getElementById("radarProductTitle").innerHTML = "1-hr Accumulated Precipitation";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/boha.png')";
                 break;
             case "BDSA":
                 document.getElementById("radarProductTitle").innerHTML = "Storm Total Accumulation";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/bdsa.png')";
                 break;
             case "BDHC":
                 document.getElementById("radarProductTitle").innerHTML = "Precipitation Classification";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/pcpn.png')";
                 break;
             case "SNEX_REF":
                 document.getElementById("radarProductTitle").innerHTML = "Super-Res Reflectivity";
