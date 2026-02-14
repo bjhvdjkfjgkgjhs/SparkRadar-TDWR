@@ -1,0 +1,4435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+
+    <!--HTML Title-->
+    <title>Spark Radar | Track the weather like a pro for free.</title>
+    <link rel="icon" type="image/png" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%0A%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23111%22/%3E%0A%3Ctext%20x%3D%2250%25%22%20y%3D%2254%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ELOGO%3C/text%3E%0A%3C/svg%3E"/>
+
+    <!--100% privacy-first analytics-->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+
+    <!--Metadata-->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="og:title" content="Spark Radar | Track the weather like a pro for free." />
+    <meta name="og:description" content="Because everyone experiences weather. Knowing what's coming shouldn't be a mystery." />
+    <meta name="og:image" content="https://sparkradar.app/asstes/logo-small.png" />
+    <meta name="description" content="Because everyone experiences weather. Knowing what's coming shouldn't be a mystery." />
+
+    <!--CSS Libraries-->
+        <!--MapLibre CSS-->
+        <link href="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.css" rel="stylesheet" />
+        <!--Spark Radar CSS-->
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overscroll-behavior-y: contain !important;
+  font-size: small;
+  font-family: "Onest", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+p {
+  margin: 0;
+  padding: 0;
+}
+
+
+#map {
+  width: 100%;
+  height: 100%;
+
+  /* Ensures the map fills the entire viewport, some devices behave strangely without this. */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+}
+
+
+.mapelement {
+  border: 1px solid gray;
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  position: fixed;
+  color: white;
+  border-radius: 20px;
+  z-index: 10;
+}
+
+
+#toolbar {
+  width: calc(100vw - 40px);
+  max-width: 400px;
+  padding: 10px;
+  bottom: 15px;
+  left: 10px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  flex-direction: row;
+  position: fixed;
+  overflow: visible;
+}
+  
+.toolbar-btn {
+  transition: opacity 0.4s, transform 0.4s;
+  will-change: opacity, transform;
+}
+
+.toolbtn-active{
+  background: #2a7fff !important;
+}
+
+#toolbar.search-active .toolbar-btn {
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+#toolbar.search-active #searchBtn {
+  opacity: 1;
+  transform: translateX(0px);
+}
+
+#toolbar.search-active #searchBox {
+  pointer-events: all;
+  width: calc(100% - 180px);
+  opacity: 1;
+}
+
+#searchBox {
+  transition: width 0.4s cubic-bezier(0.77,0,0.29,0.96), opacity 0.4s;
+  pointer-events: none;
+  opacity: 0;
+  width: 0%;
+  padding: 10px;
+  border-radius: 10px;
+  color: white;
+  background: rgb(20,20,20);
+  border: 1px solid #27beff;
+  position: fixed;
+  left: 100px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1002;
+}
+
+
+#info {
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100vw - 45px);
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 10px;
+  padding: 10px;
+  left: 10px;
+}
+
+#info i {
+  font-size: 24px;
+}
+
+.info-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s cubic-bezier(0.77, 0, 0.29, 0.96);;
+  width: 100%;
+}
+
+.info-content.expanded {
+  max-height: 420px;
+}
+
+#expandinfo i {
+  transition: transform 0.2s cubic-bezier(0.77, 0, 0.29, 0.96);;
+}
+
+#expandinfo.rotated i {
+  transform: rotate(180deg);
+}
+
+
+#menu {
+  left: 0;
+  top: 10px;
+  z-index: 1000;
+  width: calc(100% - 20px);
+  max-width: 475px;
+  padding: 10px;
+  height: calc(100% - 20px);
+  box-sizing: border-box;
+  transform: translateX(-110%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s;
+  opacity: 0;
+}
+
+#menu-settings {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+
+.menubutton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: large;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid gray;
+  border-radius: 20px;
+  margin-top: 5px;
+  font-weight: bold;
+  background: #2a7fff;
+  color: white;
+  transition-duration: 0.2s;
+}
+
+.menubutton:hover {
+  background: #27beffff;
+  color: black;
+}
+
+
+#menutitle {
+  font-size: 22px;
+  font-weight: bolder;
+  margin: 10px;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(100deg,rgba(39, 190, 255, 1) 20%, rgba(42, 127, 255, 1) 73%, rgba(255, 204, 0, 1) 74%);
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#menu.open {
+  transform: translateX(10px); /* slide in to match previous left padding */
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+#displaybox {
+  position: fixed;
+  border: 1px solid gray;
+  border-bottom: none;
+  width: calc(100% - 20px);
+  max-width: 500px;
+  height: calc(100% - 10px);
+  bottom: 0px;
+  background: rgba(20, 20, 20, 0.3);
+  backdrop-filter: blur(50px);
+  color: white;
+  box-shadow: -2px -2px 10px 10px rgba(0, 0, 0, 0.3);
+  transform: translateY(110%);
+  transition: transform 0.4s cubic-bezier(0.77, 0, 0.29, 0.96);;
+  z-index: 1001;
+  right: 10px;
+  border-radius: 20px 20px 0px 0px
+}
+
+#displaybox.open {
+  transform: translateY(0);
+}
+
+/* Make the header a touch-drag handle on mobile */
+#displayboxheader {
+  touch-action: pan-y; /* allow vertical pan gestures and prevent default horizontal interference */
+  -webkit-user-drag: none;
+  cursor: grab;
+}
+
+@media (max-width: 799px) {
+  #displayboxheader { cursor: grab; }
+}
+
+#displaybox > div {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#displayboxbody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  scrollbar-width: none;;
+}
+
+
+#displayboxtip {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  font-size: small;
+  text-align: center;
+  margin-top: 5px;
+  color: black;
+  font-weight: bolder;
+  width: calc(100% - 45px);
+  margin-top: 90px;
+  background: #27beff;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 0px 0px 20px 20px rgba(0, 0, 0, 0.5);
+}
+
+
+#attribution {
+  position: fixed;
+  right: 10px;
+  z-index: 10;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+#openPanelBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 200px;
+  z-index: 1001;
+  padding: 0.5em 1em;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+.radartypebtn {
+  background-color: black;
+  border: 1px solid gray;
+  padding: 5px 10px !important;
+  margin: 0px !important;
+  font-size: small;
+}
+
+.radartypebtn-selected {
+  background-color: #2a7fff;
+}
+
+.product-item {
+  background-color: black;
+  border: 1px solid gray;
+  color: white;
+  border-radius: 20px;
+  margin: 0px;
+  margin-bottom: 5px;
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.product-item:hover{
+  color: #27beff;
+  background-color: rgba(20, 20, 20, 0.3);
+}
+
+.product-selected {
+  background-color: #27beff !important;
+  color: black !important;
+  border-color: #27beff !important;
+}
+
+
+button {
+  background: transparent;
+  border: none;
+  padding: 0px;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  border-radius: 20px;
+  cursor: pointer;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  transition: 0.1s;
+  padding: 5px;
+}
+
+
+button:hover {
+  color: #27beffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
+a {
+  color: #27beff;
+  margin: 0px 2px;
+}
+
+
+#toolbar i {
+  font-size: 30px;
+}
+
+
+#palette{
+  display: flex;
+  width: 100%;
+  height: 20px;
+  border-radius: 10px;
+  padding: none;
+  margin: none;
+  margin-top: 10px;
+  background: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%0A%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23111%22/%3E%0A%3Ctext%20x%3D%2250%25%22%20y%3D%2254%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3EBREF%3C/text%3E%0A%3C/svg%3E');
+  background-size: cover !important;
+}
+
+/* Custom popup styling */
+.popup {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 0;
+  transition: transform 0s ease, opacity 0s ease;
+  transform: translate(-50%, -100%); /* Center horizontally, position tip at anchor */
+  width: 75%;
+  min-width: 225px;
+  max-width: 400px;
+  height: 250px;
+}
+
+.popup.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -100%) scale(0.8);
+}
+
+.popup-content {
+  background: #00000000;
+  backdrop-filter: blur(50px);
+  scrollbar-width: none;
+  border: 1px solid gray;
+  color: white;
+  border-radius: 20px;
+  padding: 10px;
+  box-shadow: -2px 2px 20px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.popup-tip {
+  position: fixed;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid gray;
+}
+
+.alertpopupitem{
+  cursor: pointer;
+  background-color: rgba(20, 20, 20, 0.3);
+  flex-direction: column;
+  display: flex;
+  padding: 10px;
+  border: 1px solid gray;
+  border-radius: 20px;
+  transition-duration: 0.2s;
+  margin-bottom: 10px;
+}
+
+.alertpopupitem:hover{
+  background-color: rgba(20, 20, 20, 0.1);
+  border: 1px solid #27beff !important;
+}
+
+.alertbutton {
+  background: transparent;
+  border: none;
+  padding: 0px;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  transition: 0.1s;
+  padding: 5px;
+}
+
+@keyframes popup-fade {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+
+.setting-checkbox {
+  padding: 10px;
+  background: rgb(20, 20, 20);
+  border-radius: 20px;
+  margin: 5px;
+  margin-bottom: 0px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.setting-input {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  background: rgb(20, 20, 20);
+  border-radius: 20px;
+  margin: 5px;
+  margin-bottom: 0px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.setting-checkbox p {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.setting-input p {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.styledcheckbox {
+  width: 25px;
+  height: 25px;
+  border-radius: 20px;
+  color: black;
+  margin-right: 10px;
+}
+
+#measureinfo {
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  background: rgb(20,20,20) !important;
+}
+
+.drawingtoolbtn {
+  background-color: rgb(20,20,20);
+  border: 1px solid gray;
+  color: white;
+  padding: 10px;
+  font-size: large;
+}
+
+.drawingtoolbtn:hover {
+  background-color: #2a7fff;
+  color: white;
+}
+
+
+/* attention animation: briefly change background color and text color
+   Uses CSS variables set on the element: --notif-color, --notif-bg, --notif-foreground */
+.attention {
+  animation: attention-flash 1s ease-in-out;
+}
+
+@keyframes attention-flash {
+  0% {
+    background-color: var(--notif-bg, rgb(20,20,20));
+    color: var(--notif-foreground, white);
+  }
+  30% {
+    background-color: var(--notif-color);
+    color: var(--notif-foreground, white);
+  }
+  70% {
+    background-color: var(--notif-color);
+    color: var(--notif-foreground, white);
+  }
+  100% {
+    background-color: var(--notif-bg, rgb(20,20,20));
+    color: var(--notif-foreground, white);
+  }
+}
+
+/* ping/ripple animation used by the small indicator placed under notifications */
+@keyframes notification-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Slide in from top animation */
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide out to top animation */
+@keyframes slide-out-top {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* Slide in from bottom animation */
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide out to bottom animation */
+@keyframes slide-out-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#drawingtoolbar.slide-in {
+  animation: slide-in-bottom 0.3s ease-out forwards;
+}
+
+#drawingtoolbar.slide-out {
+  animation: slide-out-bottom 0.3s ease-in forwards;
+}
+
+#info.slide-out {
+  animation: slide-out-top 0.3s ease-in forwards;
+}
+
+#info.slide-in {
+  animation: slide-in-top 0.3s ease-out forwards;
+}
+
+#toolbar.slide-out {
+  animation: slide-out-bottom 0.3s ease-in forwards;
+}
+
+#toolbar.slide-in {
+  animation: slide-in-bottom 0.3s ease-out forwards;
+}
+
+/* Settings submenu expand/collapse animations */
+.setting-submenu {
+  max-height: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+  width: 100%;
+  flex-shrink: 1;
+}
+
+.setting-submenu.expanded {
+  max-height: 70vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  pointer-events: all;
+
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+}
+
+.setting-submenu-toggle i {
+  transition: transform 0.3s cubic-bezier(0.77, 0, 0.29, 0.96);
+}
+
+.setting-submenu-toggle.rotated i {
+  transform: rotate(180deg);
+}
+
+.alertcolor {
+  height: 25px;
+  border-radius: 20px 5px 5px 20px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertborder {
+  height: 25px;
+  margin-left: 5px;
+  border-radius: 5px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertflash {
+  height: 25px;
+  margin-left: 5px;
+  border-radius: 5px 20px 20px 5px;
+  padding: 0px;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-weight: bolder;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popupbutton {
+    background: rgb(20, 20, 20, 0.3);
+    color: white;
+    border: 1px solid gray;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 20px;
+    padding: 15px;
+    transition-duration: 0.2s;
+    cursor: pointer;
+}
+
+.popupbutton:hover {
+  border: 1px solid #27beff !important;
+}
+
+#trafficCamBtn{
+  border:none;
+  background: rgba(20,20,25,0.75);
+  color:#fff;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+#trafficCamBtn.off{
+  opacity:0.45;
+}
+
+</style>
+<!--Font set - Onest-->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Onest:wght@100..900&display=swap" rel="stylesheet">
+        <!--Tabler Icons-->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.35.0/dist/tabler-icons.min.css" />
+
+<script>
+// GL popup shim: many code paths assume mapboxgl.*; MapLibre exposes maplibregl.*
+window.mapboxgl = window.mapboxgl || window.maplibregl;
+</script>
+
+</head>
+
+<body>
+    <!--Map-->
+    <div id="map"></div>
+    
+
+    <!--Info Box-->
+    <div class="mapelement" id="info">
+        <div style="width: 100%; display: flex; align-items: flex-start; justify-content: space-between;">
+            <button id="menuBtn" title="Menu"> <i class="ti ti-menu-2"></i></button>
+
+<button id="trafficCamBtn" title="Traffic Cameras" aria-pressed="true" style="margin-left:8px;">
+  <i class="ti ti-video"></i>
+</button>
+
+            <div style="width: 100%; display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                    <span id="radarTitle" style="text-shadow: 2px 2px 6px #202020; text-align: right; font-size: large; font-weight: 600;">CONUS MOSAIC</span>
+                    <span style="margin: 5px; font-size: large; font-weight: 600;"> · </span>
+                    <span id="radarTitle2" style="text-shadow: 2px 2px 6px #202020; text-align: left; font-size: large; font-weight: 600;">LATEST</span>
+                </div>
+                <span onclick="openProductChooser(true);" id="radarProductTitle" style="text-shadow: 2px 2px 6px #202020; text-align: center; cursor: pointer; font-size: medium; color: #27beff; width: 100%; font-weight: 600;">Base Reflectivity</span>
+            </div>
+            <button id="expandinfo" title="Expand"> <i class="ti ti-chevron-down"></i></button>
+        </div>
+
+        <div class="info-content" id="productChooser" style="display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 90%; max-height: 250px; padding: 10px; border: 1px solid gray; border-radius: 20px; background: rgb(20, 20, 20); margin-top: 5px; display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 100%; margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                    <button onclick="closeProductChooser();" title="Cancel"> <i class="ti ti-chevron-up"></i></button>
+                    <div style="margin-left: 10px; display: flex; flex-direction: row; justify-content: flex-end; width: 100%;">
+                        <button class="radartypebtn radartypebtn-selected" id="mos" onclick="radarMode = 'mos'; openProductChooser()" style="border-radius: 20px 0px 0px 20px;" title="Mosaic">MOSAICS</button>
+                        <button class="radartypebtn" id="usnexrad" onclick="radarMode = 'usnexrad'; openProductChooser()" style="border-radius: 0px;" title="CONUS Mosaic">US NEXRAD</button>
+                        <button class="radartypebtn" id="sat" onclick="radarMode = 'sat'; openProductChooser()" style="border-radius: 0px 20px 20px 0px;" title="Satellite">SATELLITE</button>
+                    </div>
+                </div>
+                <div id="products" style="scrollbar-width: none; overflow-x: hidden; overflow-y: auto; color: #27beff; width: 100%; display: flex; flex-direction: column"></div>
+            </div>
+        </div>
+
+        <div class="info-content" id="infodetails" style="display: flex; flex-direction: column; align-items: center;">
+            <!--Animation controls-->
+            <div style="margin-top: 5px; width: 95%; display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+                <button id="animationplaypause" title="Play/Pause the animation loop"> <i class="ti ti-player-play-filled"></i></button>
+                <input type="range" id="animationSlider" min="0" max="12" step="1" style="width: 100%; margin: 0 10px;" />
+                <p id="animationtime" style="text-align: center; white-space: nowrap;">00:00</p>
+                
+            </div>
+            <!--Color pallette viewers-->
+            <div id="palette"></div>
+        </div>
+    </div>
+
+    <!--Measurement Info-->
+    <div class="mapelement" id="measureinfo">
+        <span style="margin: 20px; font-weight: bold;" id="measurelength">Distance: 0mi.</span>
+    </div>
+
+    <!--Drawing Toolbar-->
+    <div style="z-index: 11; transform: translateY(-100%); opacity: 0; display: none; bottom: 10px; display: flex; left: 10px; padding: 10px; flex-direction: row;" class="mapelement" id="drawingtoolbar">
+        <button style="margin-right: 10px;" class="drawingtoolbtn" id="draw-stop" onclick="document.getElementById('drawBtn').click();" title="Exit"> <i class="ti ti-x"></i></button>
+        <button style="margin-right: 10px;" class="drawingtoolbtn" id="draw-clear" onclick="clearCanvas();" title="Clear the canvas"> <i class="ti ti-trash"></i></button>
+        <button class="drawingtoolbtn" id="draw-color-picker"> <i class="ti ti-palette"></i></button>
+    </div>
+
+    <!--Toolbar-->
+    <div class="mapelement" id="toolbar">
+        <button id="searchBtn" title="Finder"> <i class="ti ti-search"></i></button>
+        <button class="toolbar-btn" id="measureBtn" title="Measure"> <i class="ti ti-ruler-2"></i></button>
+        <button class="toolbar-btn" id="drawBtn" title="Draw"> <i class="ti ti-pencil"></i></button>
+        <button class="toolbar-btn" id="refreshBtn" title="Refresh"> <i class="ti ti-reload"></i></button>
+        <button class="toolbar-btn" id="geolocate" onclick="toggleLocation();" title="Geolocate"> <i class="ti ti-location"></i></button>
+        <input id="searchBox" type="text" placeholder="Search..."/>
+    </div>
+
+
+    <!--Attribution-->
+    <button class="mapelement" style="bottom: 10px;" id="attribution">
+        <p style="display: flex; font-size: small; margin-right: 10px;" id="attributionText">&copy;<a href="https://www.maptiler.com/copyright" target="_blank"> MapTiler</a> and <a href="https://www.openstreetmap.org/copyright" target="_blank"> Openstreetmap</a></p>
+        <i class="ti ti-info-circle"></i>
+    </button>
+
+
+    <!--Menu-->
+    <div class="mapelement" id="menu">
+        <div style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
+            <button id="menucolser" title="Close"> <i style="font-size: 24px; color: red;" class="ti ti-chevron-left"></i></button>
+            <div id="menutitlebar">
+                <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%0A%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23111%22/%3E%0A%3Ctext%20x%3D%2250%25%22%20y%3D%2254%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ELOGO%3C/text%3E%0A%3C/svg%3E" style="height: 28px; width: 28px; vertical-align: bottom; margin-right: -4px;"><span id="menutitle">SparkRadar.app</span>
+            </div>
+        </div>
+
+
+        <div id="menu-menu" style="display: flex; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); overflow-y: auto;">
+            <button class="menubutton" style="border-radius: 20px 20px 5px 5px;" onclick="openMenuItem('menu-settings')">
+                <i class="ti ti-settings-2" style="font-size: 24px; margin-right: 10px;"></i>
+                Settings
+            </button>
+            <button id="menu-about-btn" class="menubutton" style="border-radius: 5px 5px 5px 5px;" onclick="openMenuItem('menu-about')">
+                <i class="ti ti-info-circle" style="font-size: 24px; margin-right: 10px;"></i>
+                About
+            </button>
+            <button class="menubutton" style="border-radius: 5px 5px 20px 20px;" onclick="openMenuItem('menu-contact')">
+                <i class="ti ti-mail" style="font-size: 24px; margin-right: 10px;"></i>
+                Contact
+            </button>
+        </div>
+
+            <div id="menu-settings" style="display: none; min-height: 0; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                <div style="display: flex; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Alerts</p>
+                <button onclick="help('alertsettings')" style="border: none; background: none;"><i class="ti ti-help" style="font-size: 24px;"></i></button>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-alerts')" style="border: none; background: none;"><i id="alertsopenbtn" class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+
+            <div id="sett-alerts" class="setting-submenu" style="pointer-events: auto; touch-action: pan-y; display: flex; flex-direction: column; scrollbar-width: none; border-radius: 20px; flex-shrink: 1;"></div>
+
+
+            <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
+                <p id="menu-notifications-header" style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Notifications</p>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-notifications')"
+                    style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+            
+            <div id="sett-notifications" class="setting-submenu" style="display: flex; flex-direction: column; scrollbar-width: none; overflow-y: auto;">
+                <div style="border-radius: 20px 20px 5px 5px;" onclick="toggleNotifications()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-notifications"></div>
+                    <p>Notifications for my location</p>
+                </div>
+                <div style="border-radius: 5px 5px 20px 20px;" onclick="sendNotification()" class="setting-checkbox">
+                    <p style="color: #27beff;">Send test notification</p>
+                </div>
+            </div>
+
+
+            <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Application</p>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-application')"
+                    style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+            
+            <div id="sett-application" class="setting-submenu"style="display: flex; flex-direction: column; scrollbar-width: none; overflow-y: auto;">
+                <div style="border-radius: 20px;" onclick="resetSettings()" class="setting-checkbox">
+                    <p style="color: #ff2121;">Reset all settings to defaults</p>
+                </div>
+            </div>
+            
+
+
+            <div style="display: flex; margin-top: 10px; flex-direction: row; justify-content: center;;">
+                <p style="font-size: large; font-weight: bold; margin: 10px; width: 100%; text-align: left;">Advanced</p>
+                <button class="setting-submenu-toggle" onclick="opensettingdialog('sett-experimental')" style="border: none; background: none;"><i class="ti ti-chevron-down" style="font-size: 24px;"></i></button>
+            </div>
+
+            <div id="sett-experimental" class="setting-submenu" style="display: flex; flex-direction: column; overflow-y: auto;">
+                <div style="border-radius: 20px 20px 5px 5px;" onclick="togglesparkalerts()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-sparkalerts"></div>
+                    <p>SparkAlerts</p>
+                    <div style="color: black; background: #ffcc00; border-radius: 100px; margin-left: 10px; padding: 5px 10px; font-weight: bold;">BETA</div>
+                </div>
+
+                <div style="border-radius: 5px;" onclick="toggledispboxcloser()" class="setting-checkbox">
+                    <div class="styledcheckbox" id="set-dispboxcloser"></div>
+                    <p>Always show displaybox closer button</p>
+                </div>
+
+                <div style="border-radius: 5px 5px 20px 20px;" class="setting-input">
+                    <p style="width: 100%; text-align: left; margin-bottom: 10px;">SparkNEXRAD server</p>
+                    <input id="set-sparknexradurl" onchange="setSparkNexradURL()" type="text" placeholder="https://radar.sparkradar.app" value="https://radar.sparkradar.app" style="width: calc(100% - 20px); padding: 5px; border-radius: 10px; border: 1px solid gray; background: rgb(30, 30, 30); color: white;">
+                </div>
+            </div>
+            
+        </div>
+
+        <div id="menu-about"
+            style="display: none; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); overflow-y: auto;">
+        
+            <div class="feature-item">
+                <i class="ti ti-square-check-filled" style="color: #00af00; font-size: 24px; margin-right: 10px;"></i>
+                <b style="font-size: medium">99.9% uptime</b>
+            </div>
+            <div class="feature-item">
+                <i class="ti ti-cash-banknote" style="color: lightgreen; font-size: 24px; margin-right: 10px;"></i>
+                <b style="font-size: medium">Always completely free</b>
+            </div>
+            <div class="feature-item">
+                <i class="ti ti-bolt-filled" style="color: #ffcc00; font-size: 24px; margin-right: 10px;"></i>
+                <b style="font-size: medium">Fast and reliable</b>
+            </div>
+            <div class="feature-item">
+                <i class="ti ti-lock-filled" style="color: rgb(212, 119, 255); font-size: 24px; margin-right: 10px;"></i>
+                <b style="font-size: medium">Secure and private</b>
+            </div>
+            <div class="feature-item">
+                <i class="ti ti-circle-dashed-check" style="color: #27beff; font-size: 24px; margin-right: 10px;"></i>
+                <b style="font-size: medium">Beginner-friendly</b>
+            </div>
+        
+            <br>
+
+            <a class="github-button" href="https://github.com/tgranz/sparkradar"
+                data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" data-size="large"
+                data-show-count="true" aria-label="Star tgranz/sparkradar on GitHub">Star</a>
+        
+            <br><br>
+
+            <div style="position: absolute; display: flex; padding: 10px; flex-direction: column; bottom: 10px; width: calc(100% - 40px); text-align: center; font-size: small; color: lightgray;">
+                <a style="margin-bottom: 20px; background: #2a3638; border-radius: 10px; padding: 10px;" href="https://dashboard.simpleanalytics.com/sparkradar.app?utm_source=sparkradar.app&utm_content=badge"
+                    referrerpolicy="origin" target="_blank">
+                    <img src="https://simpleanalyticsbadges.com/sparkradar.app?radius=10">
+                </a>
+                <div id="privacy-badge" style="margin-bottom: 20px; background-color: #d3ffd3; color: #00a00d; font-size: 14px; padding: 10px; border-radius: 10px;">
+                    <p style="margin-bottom: 0px; font-weight: bold;">0 Intrusive Trackers</p>
+                    <p style="margin: 0px; font-size: 18px; font-weight: bolder;">100% Ad-free</p>
+                </div>
+                <a href="https://stats.uptimerobot.com/84gEmzuSa2/801172185" target="_blank"
+                    style="text-decoration: none; margin-bottom: 20px;">
+                    <div id="uptime-badge" style="background-color: #023050; color: #3BD771; font-size: 14px; padding: 10px; border-radius: 10px;">
+                        <p style="margin-bottom: 5px; font-weight: bold;">Uptime monitored with</p>
+                        <img src="https://cdn.brandfetch.io/id9LgS6jeo/w/820/h/118/theme/light/logo.png?c=1bxid64Mup7aczewSAYMX&t=1758511887056"
+                            alt="UptimeRobot" style="height: 25px; vertical-align: middle;">
+                    </div>
+                </a><br>
+                <a href="https://www.cloudflare.com" target="_blank" style="text-decoration: none;">
+                    <div id="cloudflare-badge"
+                        style="background-color: #fff5ec; color: #F6821F; font-size: 14px; padding: 4px; border-radius: 10px;">
+                        <p style="margin-bottom: 0px; font-weight: bold;">Secured by</p>
+                        <img src="https://cdn.brandfetch.io/idJ3Cg8ymG/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1667589504295"
+                            alt="Cloudflare" style="height: 45px; vertical-align: middle;">
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div id="menu-contact" style="display: none; flex-direction: column; margin-top: 10px; width: 100%; height: calc(100% - 40px); overflow-y: auto;">
+        
+            <b style="font-size: medium; margin-bottom: 20px; margin-top: 20px;">Bug? Feature request?
+                <em style="margin-left: 10px; font-weight: normal;">Preferred</em><br>
+                <a href="https://github.com/tgranz/SparkRadar/issues" target="_blank">Open an issue on GitHub.</a>
+            </b>
+
+            <b style="font-size: medium; margin-bottom: 20px; margin-top: 20px;">Or send me an email.<br>
+                <a href="mailto:nimbusapps@proton.me" target="_blank">nimbusapps@proton.me</a>
+            </b>
+        
+            <b style="font-size: medium; margin-top: 20px; margin-bottom: 20px;">Want to support SparkRadar?<br><br>
+                <a style="margin-left: 5px; text-decoration: none; padding: 5px 10px; border-radius: 100px; background: #27beff; color: black;"
+                    target="_blank" href="https://buymeacoffee.com/nimbusapps">☕ Buy me a coffee!</a>
+            </b>
+
+            </div>
+        </div>
+        
+    </div>
+
+
+    <!--Displaybox-->
+    <div id="displaybox">
+    <div style="padding: 1em;">
+        <div id="displayboxheader" style="width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <span id="displayboxtitle" style="border: 1px solid gray; border-radius: 20px; padding: 5px; width: 100%; text-align: center; font-weight: 600; font-size: large;">Display Title</span>
+            <button id="displayboxcloser" style="margin-left: 10px; font-size: 20px;" onclick="closeDisplaybox()" title="Close"> <i class="ti ti-chevron-down"></i></button>
+            <div id="displayboxtip" style="display: none;">^ Drag down to close ^</div>
+        </div>
+        <div id="displayboxbody" style="overflow-y: auto; width: calc(100% - 20px); height: 100%; padding: 10px;">
+            Loading...
+        </div>
+    </div>
+    </div>
+
+    <!--Popup-->
+    <div id="customPopup" class="popup hidden">
+    <div class="popup-tip"></div>
+    <div class="popup-content">
+        <div class="popup-body" style="height: 100%;">Hello from radar!</div>
+    </div>
+    </div>
+
+<!-- Github star button -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+
+
+
+
+
+<script>
+(function(){
+  function arcgisPjsonToGeoJSON(pjson){
+    const feats = (pjson && pjson.features) ? pjson.features : [];
+    const out = { "type":"FeatureCollection", "features":[] };
+
+    for(const f of feats){
+      const a = f.attributes || f.properties || {};
+      let lon = null, lat = null;
+
+      if(f.geometry){
+        if(typeof f.geometry.x === "number" && typeof f.geometry.y === "number"){
+          lon = f.geometry.x; lat = f.geometry.y;
+        } else if(Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length>=2){
+          lon = f.geometry.coordinates[0]; lat = f.geometry.coordinates[1];
+        }
+      }
+
+      if(lon===null || lat===null){
+        const cand = [
+          ["longitude","latitude"],["lon","lat"],["LONGITUDE","LATITUDE"],
+          ["Longitude","Latitude"],["x","y"]
+        ];
+        for(const pair of cand){
+          const lo = a[pair[0]], la = a[pair[1]];
+          if(typeof lo === "number" && typeof la === "number"){ lon=lo; lat=la; break; }
+          if(lo!=null && la!=null && !isNaN(parseFloat(lo)) && !isNaN(parseFloat(la))){
+            lon=parseFloat(lo); lat=parseFloat(la); break;
+          }
+        }
+      }
+
+      if(lon===null || lat===null || isNaN(lon) || isNaN(lat)) continue;
+
+      out.features.push({
+        "type":"Feature",
+        "geometry": { "type":"Point", "coordinates":[lon,lat] },
+        "properties": a
+      });
+    }
+    return out;
+  }
+
+  function pickUrl(p, kind){
+    // kind: "image" or "video"
+    const values = [];
+    for(const k in p){
+      const v = p[k];
+      if(typeof v === "string" && v.startsWith("http")) values.push(v);
+    }
+    // prefer obvious keys first
+    const keyPrefs = kind === "image"
+      ? ["snapshot","Snapshot","SnapShot","ImageURL","image_url","image","jpg","jpeg","png"]
+      : ["hls","HLS","m3u8","VideoURL","video_url","stream","mp4"];
+
+    for(const pref of keyPrefs){
+      for(const k in p){
+        if(k.toLowerCase().includes(pref.toLowerCase())){
+          const v = p[k];
+          if(typeof v === "string" && v.startsWith("http")) return v;
+        }
+      }
+    }
+
+    // fallback by extension
+    for(const v of values){
+      const u = v.toLowerCase();
+      if(kind==="image" && (u.includes(".jpg")||u.includes(".jpeg")||u.includes(".png"))) return v;
+      if(kind==="video" && (u.includes(".m3u8")||u.includes(".mp4"))) return v;
+    }
+
+    return null;
+  }
+
+  function setTrafficCamsVisible(map, on){
+    const layerId = "trafficCameras";
+    if(!map.getLayer(layerId)) return;
+
+    map.setLayoutProperty(layerId, "visibility", on ? "visible" : "none");
+
+    const btn = document.getElementById("trafficCamBtn");
+    if(btn){
+      btn.classList.toggle("off", !on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.title = on ? "Traffic Cameras: ON" : "Traffic Cameras: OFF";
+    }
+  }
+
+  function wireTrafficCamToggle(map){
+    const btn = document.getElementById("trafficCamBtn");
+    if(!btn) return;
+
+    btn.addEventListener("click", () => {
+      const layerId = "trafficCameras";
+      const isOn = !!(map.getLayer(layerId) && map.getLayoutProperty(layerId, "visibility") !== "none");
+      // toggle
+      setTrafficCamsVisible(map, !isOn);
+    });
+  }
+
+  
+  // --- Traffic camera icon (embedded SVG to avoid CORS issues on file://) ---
+  const FL511_CAM_ICON_URL = "https://fl511.com/map/mapIcons/Cameras"; // reference only (blocked by CORS when opened as file)
+  const FL511_CAM_ICON_NAME = "fl511-camera-icon";
+
+  function ensureFl511CamIcon(map, done){
+    try{
+      if(map.hasImage && map.hasImage(FL511_CAM_ICON_NAME)){ done(true); return; }
+    }catch(e){}
+
+    // Embedded camera glyph (white camera inside a dark rounded square) so it works offline / file://
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+        <defs>
+          <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.45"/>
+          </filter>
+        </defs>
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="#111" stroke="#fff" stroke-opacity="0.25" filter="url(#s)"/>
+        <path d="M22 26h6l2-3h8l2 3h4c2.2 0 4 1.8 4 4v14c0 2.2-1.8 4-4 4H22c-2.2 0-4-1.8-4-4V30c0-2.2 1.8-4 4-4z"
+              fill="#fff"/>
+        <circle cx="32" cy="37" r="6.5" fill="#111"/>
+        <circle cx="32" cy="37" r="3.5" fill="#fff"/>
+      </svg>
+    `.trim();
+
+    const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+    // Use MapLibre's loadImage so it can become a sprite image
+    map.loadImage(dataUrl, (err, img) => {
+      if(err || !img){
+        console.warn("Traffic cameras: failed to create embedded icon. Falling back to dots.", err);
+        done(false);
+        return;
+      }
+      try{
+        if(!(map.hasImage && map.hasImage(FL511_CAM_ICON_NAME))){
+          map.addImage(FL511_CAM_ICON_NAME, img, { pixelRatio: 2 });
+        }
+        done(true);
+      }catch(e){
+        console.warn("Traffic cameras: failed to add embedded icon image, falling back to dots.", e);
+        done(false);
+      }
+    });
+  }
+
+ameras(map){
+    const url =
+      "https://services2.arcgis.com/CcI36Pduqd0OR4W9/arcgis/rest/services/trafficCamerasCur_Prd/FeatureServer/0/query" +
+      "?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=pjson";
+
+    fetch(url)
+      .then(r => r.json())
+      .then(pjson => {
+        const geo = arcgisPjsonToGeoJSON(pjson);
+
+        if(!geo.features.length){
+          console.warn("Traffic cameras: no features returned (service may be empty or field names differ).", pjson);
+          return;
+        }
+
+        if(map.getSource("trafficCameras")){
+          map.getSource("trafficCameras").setData(geo);
+          return;
+        }
+
+        map.addSource("trafficCameras", { type:"geojson", data: geo });
+
+        
+        // Add camera markers (prefer FL511 icon; fallback to white dots if icon can't load)
+        ensureFl511CamIcon(map, (ok) => {
+          if(ok){
+            map.addLayer({
+              id: "trafficCameras",
+              type: "symbol",
+              source: "trafficCameras",
+              layout: {
+                "icon-image": FL511_CAM_ICON_NAME,
+                "icon-size": 0.65,
+                "icon-allow-overlap": true,
+                "icon-ignore-placement": true
+              }
+            });
+          } else {
+            map.addLayer({
+              id:"trafficCameras",
+              type:"circle",
+              source:"trafficCameras",
+              paint:{
+                "circle-radius": 4,
+                "circle-color":"#ffffff",
+                "circle-stroke-width": 1,
+                "circle-stroke-color":"#000000"
+              }
+            });
+          }
+
+          // Toggle defaults ON
+          setTrafficCamsVisible(map, true);
+
+          // Popup with "live capture" (auto-refresh still image if available)
+          map.on("click","trafficCameras", e => {
+            const p = (e.features && e.features[0] && e.features[0].properties) ? e.features[0].properties : {};
+            const title = p.location || p.ImageName || p.CameraLocation || p.description || "Traffic Camera";
+
+            const imgUrl = pickUrl(p, "image");
+            const vidUrl = pickUrl(p, "video");
+
+            const popupId = "cam_" + Math.random().toString(36).slice(2);
+            const imgId = popupId + "_img";
+            const statusId = popupId + "_status";
+
+            const imgBlock = imgUrl ? `
+              <div style="margin-top:8px">
+                <img id="${imgId}" src="${imgUrl}" style="max-width:360px;width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.12)" />
+                <div id="${statusId}" style="font-size:12px;opacity:0.75;margin-top:6px">Live capture: updating…</div>
+              </div>
+            ` : `<div style="margin-top:8px;font-size:12px;opacity:0.75">No snapshot URL found in this camera's fields.</div>`;
+
+            const vidBlock = vidUrl ? `
+              <div style="margin-top:8px">
+                <a href="${vidUrl}" target="_blank" rel="noopener">Open live stream</a>
+              </div>
+            ` : "";
+
+            const metaLines = [];
+            if(p.road) metaLines.push(p.road);
+            if(p.direction) metaLines.push(p.direction);
+
+            const pop = new (window.mapboxgl||window.maplibregl).Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`<b>${title}</b><br>${metaLines.join("<br>")}${imgBlock}${vidBlock}`)
+              .addTo(map);
+
+            // If there is a snapshot image, "live" refresh it by cache-busting every 2s while popup is open.
+            if(imgUrl){
+              let tick = 0;
+              const interval = setInterval(() => {
+                const el = document.getElementById(imgId);
+                if(!el){
+                  clearInterval(interval);
+                  return;
+                }
+                tick++;
+                const bust = (imgUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+                el.src = imgUrl + bust;
+                const st = document.getElementById(statusId);
+                if(st) st.textContent = "Live capture: updating… (" + tick + ")";
+              }, 2000);
+
+              pop.on("close", () => clearInterval(interval));
+            }
+          });
+
+          map.on("mouseenter","trafficCameras",()=>map.getCanvas().style.cursor="pointer");
+          map.on("mouseleave","trafficCameras",()=>map.getCanvas().style.cursor="");
+
+          // Wire UI toggle once layer is ready
+          wireTrafficCamToggle(map);
+        });
+})
+      .catch(err => console.error("Traffic cameras fetch failed:", err));
+  }
+
+  function init(){
+    if(typeof map !== "undefined" && map && typeof map.on === "function"){
+      map.on("load", () => addTrafficCameras(map));
+      // wire toggle early too (in case user clicks before layer loads)
+      map.on("load", () => wireTrafficCamToggle(map));
+      return true;
+    }
+    return false;
+  }
+
+  if(!init()){
+    let tries = 0;
+    const t = setInterval(()=>{
+      tries++;
+      if(init()) clearInterval(t);
+      if(tries>50) clearInterval(t);
+    }, 200);
+  }
+})();
+</script>
+
+
+</body>
+
+<!--JS Libraries-->
+    <!--MapLibre JS-->
+    <script src="https://unpkg.com/maplibre-gl@3.3.1/dist/maplibre-gl.js"></script>
+    <!--Turf.js-->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <!--Spark Radar JS - Load core first, then others can be async-->
+<script>
+// --- inlined from js/core.js ---
+/*
+THE SPARK RADAR PROJECT
+FREE AND EASY TO USE WEATHER RADAR
+BECAUSE EVERYONE EXPERIENCES WEATHER
+https://sparkradar.app
+CODED BY TYLER G
+
+IMPORTANT: This code is open source for your viewing.
+THIS CODE IS NOT TO BE COPIED OR USED WITHOUT PERMISSION
+FOR QUESTIONS, PLEASE CONTACT ME AT nimbusapps@proton.me
+THANK YOU!
+
+*/
+
+var first = localStorage.getItem('sparkradar_firsttime') === null;
+var newUser = first;
+localStorage.setItem('sparkradar_firsttime', 'false');
+
+var mapparams = {
+    container: 'map',
+    style: 'https://api.maptiler.com/maps/01991750-e542-745a-bb74-f8f5646a978c/style.json?key=UMONrX6MjViuKZoR882u',
+    center: [-95, 40],
+    zoom: 4,
+    projection: 'globe',
+    attributionControl: false
+}
+var locationtoaddtomap = null;
+var appmode = false;
+
+// Evaluate the URL parameters
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('mode')) {
+    const modeParam = urlParams.get('mode').toLowerCase();
+    if (modeParam == 'app'){
+        // For viewing fullscreen in the SparkRadarWX app
+        // Minor adjustments to the UI
+        appmode = true;
+        console.log("Running in app mode.");
+
+        document.getElementById('geolocate').style.display = 'none';
+        document.getElementById('menu-about-btn').style.display = 'none';
+        document.getElementById('menu-notifications-header').innerHTML = 'Radar Notifications';
+
+    } else if (modeParam == 'preview') {
+        // For embedding a preview of the new radar, originally for SparkRadarWX app
+        // Hide toolbar, info box, and expanded attribution
+        document.getElementById('toolbar').style.display = 'none';
+        document.getElementById('info').style.display = 'none';
+        document.getElementById('attributionText').style.display = 'none';
+
+        console.log("Running in preview mode.");
+    }
+}
+if (urlParams.has('lat') && urlParams.has('lon')) {
+    const lat = parseFloat(urlParams.get('lat'));
+    const lon = parseFloat(urlParams.get('lon'));
+
+    mapparams.center = [lon, lat];
+    mapparams.zoom = 8;
+
+    locationtoaddtomap = [lon, lat];
+}
+if (urlParams.has('zoom')) {
+    const zoom = parseFloat(urlParams.get('zoom'));
+    mapparams.zoom = zoom;
+}
+
+// Set up the map
+const map = new maplibregl.Map(mapparams);
+
+// Variables
+var labelLayerId;
+var labelLayer;
+map.on('load', () => {
+    labelLayer = map.getStyle().layers.find(l => l.id.includes('label') && l.type === 'symbol');
+    labelLayerId = labelLayer ? labelLayer.id : undefined;
+
+    if (locationtoaddtomap) {
+        map.addSource('location-marker', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: locationtoaddtomap
+                }
+            }
+        });
+        map.addLayer({
+            id: 'location-marker',
+            type: 'circle',
+            source: 'location-marker',
+            paint: {
+                'circle-radius': 10,
+                'circle-color': '#2a7fff',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#fff'
+            }
+        });
+    }
+});
+
+
+// Welcome dialog for first-time users
+// Not needed anymore as SparkRadar is no longer new, but will add onboarding in the future
+if (first && !appmode) {
+    first = false;
+}
+
+// Function to guess if the user is on mobile
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Check if the user is on mobile, if so use pop out alert color chooser
+// See GitHub issue #7, in progress
+/*
+if (inMobile()){
+    document.getElementById("alertsopenbtn").classList.remove("ti-chevron-down");
+    document.getElementById("alertsopenbtn").classList.add("ti-window-maximize");
+}*/
+
+function evaluateDispBoxCloser() { 
+    let alwaysshowdispboxcloser = false;
+    try {
+        alwaysshowdispboxcloser = JSON.parse(localStorage.getItem('sparkradar_settings')).alwaysshowdispboxcloser || false;
+    } catch (e) {
+        alwaysshowdispboxcloser = false;
+    }
+
+    // Show the closer on desktop always. On mobile, show only if the user enabled "always show".
+    if (!isMobile()) {
+        document.getElementById('displayboxcloser').style.display = 'block';
+    } else {
+        document.getElementById('displayboxcloser').style.display = alwaysshowdispboxcloser ? 'block' : 'none';
+    }
+}
+
+evaluateDispBoxCloser();
+
+// Function to calculate relative time to a given ISO timestamp
+function isoTimeUntil(isoTimestamp) {
+    const now = new Date();
+    const then = new Date(isoTimestamp);
+    const diffMs = then - now;
+
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (diffDays > 0) {
+        return `${diffDays} d ${diffHours} hr`;
+    } else if (diffHours > 0) {
+        return `${diffHours} hr ${diffMinutes} min`;
+    } else if (diffMinutes < 0) {
+        return '-- min';
+    } else {
+        return `${diffMinutes} min`;
+    }
+}
+
+// Function to determine if white or black will have more contrast atop a given hex color
+function readableTextColor(hexcolor, invert=false) {
+    hexcolor = hexcolor.replace('#', '');
+
+    // Convert the hex color to RGB values
+    const r = parseInt(hexcolor.substr(0, 2), 16);
+    const g = parseInt(hexcolor.substr(2, 2), 16);
+    const b = parseInt(hexcolor.substr(4, 2), 16);
+
+    // Calculate the YIQ value
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+
+    // Return black or white based on the YIQ value
+    if(!invert) return yiq >= 128 ? 'black' : 'white';
+    else return yiq >= 128 ? 'white' : 'black';
+}
+
+
+
+// This snippit logs all layers on the map
+// DEBUGGING
+map.on('styledata', function() {
+    const layers = map.getStyle().layers;
+    layers.forEach((layer, index) => {
+        console.debug(index, layer.id, layer.type);
+    });
+});
+
+
+// Add event listeners
+function viewAlertDetails(id) {
+    const alert = alerts.find(a => a.id === id);
+    openDisplaybox(alert.properties.event, findAlertColor(alert.properties.event));
+
+    let detectables = [];
+    try { detectables.push('<strong style="color: red;">Tornado: ' + alert.properties.parameters.tornadoDetection[0] + '</strong>'); } catch {}
+    try { detectables.push('<strong>Hail: ' + alert.properties.parameters.maxHailSize[0] + 'in, ' + alert.properties.parameters.hailThreat[0] + '</strong>'); } catch {
+        // Fallback
+        try { detectables.push('<strong>Hail: ' + alert.properties.parameters.maxHailSize[0] + 'in. </strong>'); } catch {}
+    }
+    try { detectables.push('<strong>Wind: ' + alert.alert.properties.parameters.maxWindGust[0]) + ', ' + alert.properties.parameters.windThreat[0] + '</strong>';  } catch {
+        // Fallback
+        try { detectables.push('<strong>Wind: ' + alert.properties.parameters.maxWindGust[0] + '</strong>'); } catch {}
+    }
+    try { detectables.push('<strong>Flooding: ' + alert.properties.flashFloodDamage[0] + ', ' + alert.properties.parameters.flashFloodDetection[0] + '</strong>'); } catch {}
+
+    // Format the description text
+    var fixedDesc = alert.properties.description
+        .replace(/\n\n/g, '<br><br>')
+        .replace("WHAT", '<b style="font-family: Consolas, monospace, sans-serif !important;">WHAT</b>')
+        .replace("WHERE", '<b style="font-family: Consolas, monospace, sans-serif !important;">WHERE</b>')
+        .replace("WHEN", '<b style="font-family: Consolas, monospace, sans-serif !important;">WHEN</b>')
+        .replace("IMPACTS", '<b style="font-family: Consolas, monospace, sans-serif !important;">IMPACTS</b>')
+        .replace("HAZARDS", '<b style="font-family: Consolas, monospace, sans-serif !important;">HAZARDS</b>')
+        .replace("SOURCE", '<b style="font-family: Consolas, monospace, sans-serif !important;">SOURCE</b>')
+        .replace("LOCATIONS IMPACTED INCLUDE", '<b style="font-family: Consolas, monospace, sans-serif !important;">LOCATIONS IMPACTED INCLUDE</b>')
+        .replace("HAZARD", '<b style="font-family: Consolas, monospace, sans-serif !important;">HAZARD</b>')
+        .replace("LOCATION AND MOVEMENT", '<b style="font-family: Consolas, monospace, sans-serif !important;">LOCATION AND MOVEMENT</b>')
+        .replace("IMPACT", '<b style="font-family: Consolas, monospace, sans-serif !important;">IMPACT</b>')
+        .replace("SAFETY INFO", '<b style="font-family: Consolas, monospace, sans-serif !important;">SAFETY INFO</b>')
+        .replace("ADDITIONAL DETAILS", '<b style="font-family: Consolas, monospace, sans-serif !important;">ADDITIONAL DETAILS</b>')
+        .replace("Locations impacted include", '<b style="font-family: Consolas, monospace, sans-serif !important;">Locations impacted include</b>')
+        
+    document.getElementById('displayboxbody').innerHTML = (`
+        <p style="font-size: medium;">
+            Areas: <strong>${alert.properties.areaDesc}</strong><br>
+            Expires in: <strong>${isoTimeUntil(alert.properties.expires)}</strong>
+            ${detectables.length ? '<br>' + detectables.join('<br>') : ''}
+            <br>
+            <p style="margin: 0px; background: black; margin-bottom: 20px; margin-top: 20px; font-family: Consolas, monospace, sans-serif !important; padding: 10px; border-radius: 20px; border: 1px solid gray;">
+                ${fixedDesc.replace(/www\./g, "")}
+            </p>
+        </p>
+    `)
+}
+
+// Resize
+function resizeListener() {
+    // DEBUGGING
+    console.debug('Viewport size:', window.innerWidth, 'x', window.innerHeight);
+    var urlParams = new URLSearchParams(window.location.search);
+
+    if (window.innerWidth < 800 && !urlParams.has('mode') ) {
+        document.getElementById('attribution').style.bottom = '80px';
+    } else if ( urlParams.has('mode') ) {
+        if ( urlParams.get('mode').toLowerCase() == 'preview' ){
+            document.getElementById('attribution').style.bottom = '10px';
+        }
+    }
+}
+
+window.addEventListener('resize', () => { resizeListener(); });
+resizeListener();
+
+// Attribution
+document.getElementById('attribution').addEventListener('click', () => {
+    if (document.getElementById('attributionText').style.display == 'flex'){
+        document.getElementById('attributionText').style.display = 'none';
+    } else {
+        document.getElementById('attributionText').style.display = 'flex';
+    }
+});
+
+setTimeout(() => { if (document.getElementById('attributionText').style.display == 'flex'){ document.getElementById('attributionText').style.display = 'none' } }, 5000);
+
+// Search
+const toolbar = document.getElementById('toolbar');
+const searchBtn = document.getElementById('searchBtn');
+const searchBox = document.getElementById('searchBox');
+
+searchBtn.addEventListener('click', () => {
+    toolbar.classList.toggle('search-active');
+    if (toolbar.classList.contains('search-active')) {
+        setTimeout(() => { searchBox.focus(); }, 400);
+    }
+});
+
+searchBox.addEventListener('blur', () => {
+    toolbar.classList.remove('search-active');
+});
+
+
+
+// Info
+document.getElementById('expandinfo').addEventListener('click', (event) => {
+    document.getElementById('infodetails').classList.toggle('expanded');
+    document.getElementById('expandinfo').classList.toggle('rotated');
+
+});
+
+// Displaybox
+function openDisplaybox(title, color, helpsection = null) {
+    if (newUser && document.getElementById('displayboxcloser').style.display == 'none') {
+        document.getElementById('displayboxtip').style.display = 'flex';
+        setTimeout(() => { document.getElementById('displayboxtip').style.display = 'none'; }, 5000);
+        newUser = false;
+    }
+
+    if (helpsection) {
+        if (helpsection == 'alertsettings') {
+            document.getElementById('displayboxbody').innerHTML = `<p style="font-size: medium;">
+            SparkRadar allows you to customize the appearance of alerts on the map.<br><br>
+            Click on the checkbox on the left to hide that alert from the map.<br><br>
+            <strong>C</strong> (Color): Sets the fill color of the alert polygon.<br>
+            <strong>B</strong> (Border): Sets the color of the alert polygon's border.<br>
+            <strong>F</strong> (Flash): Sets the flash color of the alert polygon. To disable flashing for an alert, set this to pure black (#000000)<br>
+            </p>`
+        }
+    }
+
+    document.getElementById('displaybox').classList.add('open');
+    document.getElementById('displayboxtitle').style.backgroundColor = color;
+    document.getElementById('displayboxtitle').style.color = readableTextColor(color);
+    document.getElementById('displayboxtitle').innerHTML = `<p style="font-size: medium; text-shadow: 1px 1px 3px ${readableTextColor(color, true)};">${title}</p>`;
+}
+
+function closeDisplaybox() {
+    document.getElementById('displaybox').classList.remove('open');
+}
+
+// --- Mobile: drag-down-to-close behavior for the displaybox header ---
+(() => {
+    const header = document.getElementById('displayboxheader');
+    const displaybox = document.getElementById('displaybox');
+    if (!header || !displaybox) return;
+
+    // Only allow drag-to-close when on mobile AND the user has not chosen to always show the close button
+    function allowDragClose() {
+        let alwaysShow = false;
+        try {
+            alwaysShow = JSON.parse(localStorage.getItem('sparkradar_settings')).alwaysshowdispboxcloser || false;
+        } catch (e) {
+            alwaysShow = false;
+        }
+        return isMobile() && !alwaysShow;
+    }
+
+    let startY = null;
+    let currentTranslate = 0;
+    let isDragging = false;
+    let origTransition = displaybox.style.transition || '';
+
+    function onTouchStart(e) {
+        if (!allowDragClose()) return;
+        if (!displaybox.classList.contains('open')) return; // only when open
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        startY = t.clientY;
+        currentTranslate = 0;
+        isDragging = true;
+        // disable CSS transition while dragging for immediate response
+        displaybox.style.transition = 'none';
+        // prevent the page from trying to scroll while we drag the handle
+        e.preventDefault();
+    }
+
+    function onTouchMove(e) {
+        if (!isDragging) return;
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        const delta = t.clientY - startY;
+        // only allow downward drag
+        if (delta <= 0) {
+            currentTranslate = 0;
+        } else {
+            // dampen the drag a bit so it feels natural
+            currentTranslate = Math.pow(delta, 0.95);
+        }
+        // apply transform relative to open position
+        displaybox.style.transform = `translateY(${currentTranslate}px)`;
+        // prevent default so the page doesn't scroll under the gesture
+        e.preventDefault();
+    }
+
+    function endDrag(cancelled) {
+        if (!isDragging) return;
+        isDragging = false;
+        // restore transition for smooth snapping
+        displaybox.style.transition = origTransition || '';
+        const threshold = Math.min(120, window.innerHeight * 0.25); // px or 25% of viewport
+        if (!cancelled && currentTranslate > threshold) {
+            // consider this a close gesture
+            // Animate the panel off-screen, then remove the open class to reset state
+            displaybox.style.transform = `translateY(110%)`;
+            // wait for the animation to finish before removing 'open'
+            setTimeout(() => {
+                displaybox.classList.remove('open');
+                // clear inline transform so CSS rules take over next open
+                displaybox.style.transform = '';
+            }, 220);
+        } else {
+            // snap back to open position
+            displaybox.style.transform = `translateY(0)`;
+            // clear translate after transition completes
+            setTimeout(() => { displaybox.style.transform = ''; }, 220);
+        }
+        startY = null;
+        currentTranslate = 0;
+    }
+
+    function onTouchEnd(e) {
+        endDrag(false);
+    }
+
+    function onTouchCancel(e) {
+        endDrag(true);
+    }
+
+    // Attach listeners to the header. Use non-passive so we can preventDefault when needed.
+    header.addEventListener('touchstart', onTouchStart, { passive: false });
+    header.addEventListener('touchmove', onTouchMove, { passive: false });
+    header.addEventListener('touchend', onTouchEnd);
+    header.addEventListener('touchcancel', onTouchCancel);
+
+    // If viewport changes (rotate/resize), clear any dragging state
+    window.addEventListener('resize', () => { if (isDragging) endDrag(true); });
+})();
+
+// Disable pull-to-refresh on iOS Safari: if the page is scrolled to top and the user
+// performs a downward touchmove outside of an inner scrollable element, prevent it.
+(function disablePullToRefreshForIOS(){
+    // Many browsers honor CSS `overscroll-behavior-y: none;` (set in style.css),
+    // but iOS Safari does not. This JS intercepts the gesture and prevents
+    // the native pull-to-refresh when appropriate.
+    let maybePrevent = false;
+
+    function isScrollable(el) {
+        if (!el) return false;
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        return (overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+    }
+
+    window.addEventListener('touchstart', function(e){
+        if (window.scrollY === 0) {
+            // If touching a scrollable descendant, allow normal behavior
+            const target = e.target;
+            if (isScrollable(target) || target.closest && target.closest('#displayboxbody, .popup-content, .info-content')) {
+                maybePrevent = false;
+            } else {
+                maybePrevent = true;
+            }
+        } else {
+            maybePrevent = false;
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function(e){
+        if (!maybePrevent) return;
+        // If the touchmove is downward, prevent to stop pull-to-refresh
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        // If the user starts touching at the top and swipes down, prevent default
+        // to avoid triggering pull-to-refresh on iOS Safari.
+        if (t.clientY > 0) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+})();
+
+// Product chooser
+
+// === TDWR product support (dynamic from WMS GetCapabilities) ===
+const tdwrLayerCache = {}; // { stationLower: { suffixes:[], byGroup:{}, fetchedAt:number } }
+
+function humanizeTdwrSuffix(suf){
+    const s = suf.toLowerCase();
+    // common TDWR layer suffixes include bref, bref1, bvel, bvel1, etc.
+    const m = s.match(/^(bref|bvel)(\d+)?$/);
+    if(m){
+        const base = (m[1] === 'bref') ? 'Base Reflectivity' : 'Base Velocity';
+        if(m[2]) return `${base} (Tilt ${m[2]})`;
+        return base;
+    }
+    // fallback: uppercase suffix
+    return suf.toUpperCase();
+}
+
+async function getTdwrLayerSuffixes(stationLower){
+    const cached = tdwrLayerCache[stationLower];
+    if(cached && cached.suffixes && cached.suffixes.length) return cached.suffixes;
+
+    const url = `https://opengeo.ncep.noaa.gov/geoserver/${stationLower}/ows?service=WMS&version=1.3.0&request=GetCapabilities&cache_bust=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`TDWR GetCapabilities failed (${res.status})`);
+    const xmlText = await res.text();
+    const xml = new DOMParser().parseFromString(xmlText, "text/xml");
+    const names = Array.from(xml.querySelectorAll("Layer > Name")).map(n => (n.textContent||'').trim()).filter(Boolean);
+
+    const prefix = stationLower + "_";
+    const suffixes = names
+        .filter(n => n.toLowerCase().startsWith(prefix))
+        .map(n => n.slice(prefix.length))
+        // ignore the QCD composite layer if present; keep the rest
+        .filter(s => !!s);
+
+    // de-dupe + sort (tilt numbers in order)
+    const uniq = Array.from(new Set(suffixes));
+    uniq.sort((a,b)=>{
+        const aa=a.toLowerCase(), bb=b.toLowerCase();
+        const pa=aa.match(/^(bref|bvel)(\d+)?$/), pb=bb.match(/^(bref|bvel)(\d+)?$/);
+        if(pa && pb && pa[1]===pb[1]){
+            const na=parseInt(pa[2]||"0",10), nb=parseInt(pb[2]||"0",10);
+            if(na!==nb) return na-nb;
+        }
+        return aa.localeCompare(bb);
+    });
+
+    tdwrLayerCache[stationLower] = { suffixes: uniq, fetchedAt: Date.now() };
+    return uniq;
+}
+
+async function populateTdwrProductsUI(){
+    const stationLower = (radarStation || '').toLowerCase();
+    const el = document.getElementById("products");
+    if(!el) return;
+
+    el.innerHTML = '<p style="width: 100%; text-align:center; font-weight:bold;">Loading TDWR products…</p>';
+
+    try{
+        const suffixes = await getTdwrLayerSuffixes(stationLower);
+
+        const refl = suffixes.filter(s=>s.toLowerCase().startsWith("bref"));
+        const vel  = suffixes.filter(s=>s.toLowerCase().startsWith("bvel"));
+        const other = suffixes.filter(s=>{
+            const t=s.toLowerCase();
+            return !(t.startsWith("bref")||t.startsWith("bvel"));
+        });
+
+        let html = '';
+        if(refl.length){
+            html += '<p style="color:white;width:100%;text-align:left;font-weight:bold;margin:10px;font-size:medium;">Reflectivity</p>';
+            html += refl.map(suf => 
+                `<div class="product-item ${radarProduct.toLowerCase() === suf.toLowerCase() ? 'product-selected' : ''}" onclick="radarProduct='${suf.toUpperCase()}'; loadRadar(radarStation, false, true); openProductChooser(true);">${humanizeTdwrSuffix(suf)}</div>`
+            ).join('');
+        }
+        if(vel.length){
+            html += '<p style="color:white;width:100%;text-align:left;font-weight:bold;margin:10px;font-size:medium;">Velocity</p>';
+            html += vel.map(suf => 
+                `<div class="product-item ${radarProduct.toLowerCase() === suf.toLowerCase() ? 'product-selected' : ''}" onclick="radarProduct='${suf.toUpperCase()}'; loadRadar(radarStation, false, true); openProductChooser(true);">${humanizeTdwrSuffix(suf)}</div>`
+            ).join('');
+        }
+        if(other.length){
+            html += '<p style="color:white;width:100%;text-align:left;font-weight:bold;margin:10px;font-size:medium;">Other</p>';
+            html += other.map(suf => 
+                `<div class="product-item ${radarProduct.toLowerCase() === suf.toLowerCase() ? 'product-selected' : ''}" onclick="radarProduct='${suf.toUpperCase()}'; loadRadar(radarStation, false, true); openProductChooser(true);">${humanizeTdwrSuffix(suf)}</div>`
+            ).join('');
+        }
+
+        if(!html){
+            html = '<p style="width:100%;text-align:center;font-weight:bold;">No TDWR layers found for this station.</p>';
+        }
+        el.innerHTML = html;
+    }catch(err){
+        console.error("TDWR products load failed:", err);
+        el.innerHTML = '<p style="width:100%;text-align:center;font-weight:bold;">Failed to load TDWR products.</p>';
+    }
+}
+function openProductChooser(closeIfAlreadyOpen=false) {
+    if (closeIfAlreadyOpen && document.getElementById('productChooser').classList.contains('expanded')){ closeProductChooser(); return; }
+    document.getElementById('productChooser').classList.add('expanded');
+
+    document.getElementById("mos").classList.remove('radartypebtn-selected');
+    document.getElementById("usnexrad").classList.remove('radartypebtn-selected');
+    document.getElementById("sat").classList.remove('radartypebtn-selected');
+    loadRadarStations(true);
+    
+    if (radarMode == "mos"){
+        document.getElementById("mos").classList.add('radartypebtn-selected');
+        document.getElementById("products").innerHTML  = `
+            <div class="product-item" onclick="radarMode = 'mos'; loadRadar('CONUS', false, true);">US Composite Reflectivity</div>
+            <div class="product-item" onclick="radarMode = 'mos'; loadRadar('CANMOS', false, true);">CANADA Reflectivity Mosaic</div>
+        `/*    <div class="product-item">Base Reflectivity</div>
+            <div class="product-item">Precipitation Classification</div>
+            <div class="product-item">Echo Tops</div>
+        `*/
+    } else if (radarMode == "usnexrad"){
+        document.getElementById("usnexrad").classList.add('radartypebtn-selected');
+        loadRadarStations();
+        document.getElementById("products").innerHTML  = '<p style="width: 100%; text-align: center; font-weight: bold;">Select a station to view its products.</p>'
+    } else if (radarMode == "station"){
+        document.getElementById("usnexrad").classList.add('radartypebtn-selected');
+        loadRadarStations();
+
+        // If the selected station is a TDWR site, dynamically list all available TDWR WMS layers.
+        if ((radarStationType || '').toUpperCase() === "TDWR") {
+            // TDWR layer suffixes are like BREF, BREF1, BVEL, BVEL1, etc.
+            populateTdwrProductsUI();
+        } else {
+        const products = [
+            { code: 'SR_BREF', name: 'Base Reflectivity' },
+            { code: 'SR_BVEL', name: 'Base Velocity' },
+            { code: 'BDHC', name: 'Precipitation Classification' },
+            { code: 'BOHA', name: '1hr Precipitation Accumulation' },
+            { code: 'BDSA', name: 'Total Precipitation Accumulation' },
+        ];
+
+        const superresproducts = [
+            // New: Super-resolution products from SparkNEXRAD
+            { code: 'SNEX_REF', name: 'Base Reflectivity' },
+            { code: 'SNEX_VEL', name: 'Base Velocity' },
+            { code: 'SNEX_CC', name: 'Correlation Coefficient' },
+            { code: 'SNEX_ZDR', name: 'Differential Reflectivity' },
+            // Not working yet? { code: 'SNEX_KDP', name: 'Specific Differential Phase' },
+            { code: 'SNEX_SW', name: 'Spectrum Width' }
+        ];
+
+        document.getElementById("products").innerHTML = '<p style="color: white; width: 100%; text-align: left; font-weight: bold; margin: 10px; font-size: medium;">Standard Products</p>';
+        
+        document.getElementById("products").innerHTML += products.map(p => 
+            `<div class="product-item ${radarProduct === p.code ? 'product-selected' : ''}" onclick="radarProduct='${p.code}'; loadRadar(radarStation, false, true); openProductChooser(true);">${p.name}</div>`
+        ).join('');
+
+        document.getElementById("products").innerHTML += '<p style="color: white; width: 100%; text-align: left; font-weight: bold; margin: 10px; font-size: medium;">SUPER-RES Products (BETA)</p>';
+
+        document.getElementById("products").innerHTML += superresproducts.map(p => 
+            `<div class="product-item ${radarProduct === p.code ? 'product-selected' : ''}" onclick="radarProduct='${p.code}'; loadRadar(radarStation, false, true); openProductChooser(true);">${p.name}</div>`
+        ).join('');
+
+    
+        }
+
+    } else if (radarMode == "sat"){
+        document.getElementById("sat").classList.add('radartypebtn-selected');
+        /*document.getElementById("products").innerHTML  = `
+            <div class="product-item">GOES Geocolor</div>
+        `*/
+        document.getElementById("products").innerHTML  = 'Coming Soon!'
+    }
+}
+
+function closeProductChooser() {
+    document.getElementById('productChooser').classList.remove('expanded');
+}
+
+
+function sendNotification(title="Test Notification", body="This is a test notification. Click to dismiss.", icon="circle-dashed-check", color="#27beff") {
+    const showDuration = 9000;
+    const animMs = 300;
+
+    const notif = document.createElement('div');
+    notif.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+            <i class="ti ti-${icon}" style="font-size: 30px; color: ${color}; height:40px; width:40px; border-radius:8px; flex:0 0 40px;"></i>
+            <div style="color: white; display:flex; flex-direction:column;">
+                <strong style="font-size:medium;">${title}</strong>
+                <span style="font-size:small;">${body}</span>
+            </div>
+        </div>
+    `;
+    // wrapper for positioning + animation. Put notification and ping inside it
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position: fixed; bottom: 10px; right: -5px; z-index: 10000;`;
+
+    // Make notif positioned relative inside the wrapper so the ping can be absolute
+    // Use CSS variables for background/foreground so we can animate the background color
+    notif.style.cssText = `
+        position: relative;
+        background: var(--notif-bg, rgb(20, 20, 20));
+        color: var(--notif-foreground, white);
+        padding: 10px 15px;
+        border-radius: 10px;
+        box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 6px 6px;
+        border-left: 6px solid ${color};
+        font-family: sans-serif;
+        transform: translateX(0px);
+        opacity: 1;
+        transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms;
+        cursor: pointer;
+        width: calc(100% - 55px);
+        max-width: 300px;
+        max-height: 200px;
+    `;
+
+    // expose color and readable foreground for CSS animations via CSS variables
+    notif.style.setProperty('--notif-color', color);
+    notif.style.setProperty('--notif-bg', 'rgb(20, 20, 20)');
+    try {
+        notif.style.setProperty('--notif-foreground', readableTextColor(color));
+    } catch (e) {
+        notif.style.setProperty('--notif-foreground', 'white');
+    }
+
+    // Create ping animation element positioned relative to the notif
+    const ping = document.createElement('div');
+    ping.style.cssText = `
+        position: absolute;
+        left: 18px;
+        bottom: -10px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--notif-color);
+        animation: notification-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        pointer-events: none;
+    `;
+
+    wrapper.appendChild(notif);
+    wrapper.appendChild(ping);
+    document.body.appendChild(wrapper);
+    notif.classList.add('attention')
+    setTimeout(() => { notif.classList.remove('attention'); }, 2000);
+
+    // play sound (safe for autoplay policies; will fail silently if blocked)
+    const audio = new Audio('notification.wav');
+    audio.preload = 'auto';
+    audio.volume = 0.9;
+    audio.play().catch(() => { /* may be blocked until a user gesture; ignore */ });
+
+    // stop audio if user dismisses notification
+    notif.addEventListener('click', () => {
+        try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+    });
+
+    // ensure audio is stopped/cleaned up when the wrapper (which contains notif+ping) is removed
+    const mo = new MutationObserver((mutations, observer) => {
+        for (const m of mutations) {
+            for (const n of m.removedNodes) {
+                if (n === wrapper) {
+                    try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+                    observer.disconnect();
+                    return;
+                }
+            }
+        }
+    });
+    mo.observe(document.body, { childList: true });
+
+    // force layout then play enter animation
+    requestAnimationFrame(() => {
+        notif.style.transform = 'translateX(0)';
+        notif.style.opacity = '1';
+    });
+
+    let removed = false;
+    function removeNotif() {
+        if (removed) return;
+        removed = true;
+        // play exit animation on the notif inside the wrapper
+        notif.style.transform = 'translateX(120%)';
+        notif.style.opacity = '0';
+        // remove the whole wrapper after the exit animation
+        setTimeout(() => {
+            if (wrapper.parentElement) wrapper.parentElement.removeChild(wrapper);
+        }, animMs);
+    }
+
+    // auto-remove after duration
+    const hideTimeout = setTimeout(removeNotif, showDuration + animMs);
+
+    // allow click to dismiss immediately
+    notif.addEventListener('click', () => {
+        clearTimeout(hideTimeout);
+        removeNotif();
+    });
+}
+
+
+/*
+const formatDate = (dateStr) => {
+                    if (!dateStr) return "N/A";
+                    const date = new Date(dateStr);
+                    const options = {
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZoneName: 'short'
+                    };
+
+                    let formatted = date.toLocaleString(undefined, options);
+                    formatted = formatted.replace(/\/\d{4}/, '');
+                    return formatted;
+                };
+
+                const start = formatDate(alert.properties.onset);
+                const end = formatDate(alert.properties.expires);
+                */
+
+</script>
+<script>
+// --- inlined from js/alerts.js ---
+var alertIds = [];
+var alerts = [];
+// Track flashing interval IDs so we can clear them when alerts are removed
+var alertIntervals = {};
+
+// Load the FIPS county geometry data at the start of the script
+var fipsCountyGeometry = null;
+
+const defaultAlerts = {
+    "Air Quality Alert":
+        { enabled: true, color: "#768b00", border: "#768b00", flash: null },
+    "Avalanche Warning":
+        { enabled: true, color: "#ff00ff", border: "#ff00ff", flash: null },
+    "Dust Advisory":
+        { enabled: true, color: "#706e00", border: "#706e00", flash: null },
+    "Dust Storm Warning":
+        { enabled: true, color: "#776b00", border: "#776b00", flash: null },
+    "Flash Flood Emergency":
+        { enabled: true, color: "#00ff00", border: "#00ff00", flash: "#00b600" },
+    "Flash Flood Warning":
+        { enabled: true, color: "#00ff00", border: "#00ff00", flash: null },
+    "Flood Advisory":
+        { enabled: true, color: "#00538b", border: "#00538b", flash: null },
+    "Flood Warning":
+        { enabled: true, color: "#1E90FF", border: "#1E90FF", flash: null },
+    "Flood Watch":
+        { enabled: true, color: "#60fd82", border: "#60fd82", flash: null },
+    "Marine Weather Statement":
+        { enabled: true, color: "#690083", border: "#690083", flash: null },
+    "PDS Tornado Warning":
+        { enabled: true, color: "#e900dd", border: "#e900dd", flash: "#e90000" },
+    "Severe Thunderstorm Warning":
+        { enabled: true, color: "#f1a500", border: "#f1a500", flash: null },
+    "Snow Squall Warning":
+        { enabled: true, color: "#0096aa", border: "#0096aa", flash: null },
+    "Special Marine Warning":
+        { enabled: true, color: "#8b3300", border: "#8b3300", flash: null },
+    "Special Weather Statement":
+        { enabled: true, color: "#eeff00", border: "#eeff00", flash: null },
+    "Tornado Emergency":
+        { enabled: true, color: "#9f00e9", border: "#9f00e9", flash: "#e900dd" },
+    "Tornado Warning":
+        { enabled: true, color: "#e90000", border: "#e90000", flash: null },
+    "Tropical Storm Watch":
+        { enabled: true, color: "#3f0072", border: "#3f0072", flash: null },
+};
+
+fetch('https://raw.githubusercontent.com/tgranz/SparkRadar/main/data/fips_county_geometry.json')
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to fetch FIPS GeoJSON: ' + response.status);
+        return response.json();
+    })
+    .then(json => {
+        fipsCountyGeometry = json;
+        console.log('FIPS GeoJSON loaded.');
+    })
+    .catch(err => {
+        console.error('Error loading FIPS GeoJSON:', err);
+    });
+
+
+// Function to validate if an alert is enabled in settings
+function validateAlert(alert) {
+    var alertsdb = localStorage.getItem('sparkradar_alerts');
+
+    if (alertsdb) {
+        alertsdb = JSON.parse(alertsdb);
+    } else {
+        return true; // All alerts enabled by default
+    }
+
+    if (alertsdb[alert]) {
+        return alertsdb[alert].enabled;
+    } else {
+        return true;
+    }
+}
+
+// Function to get specific alert property
+function findAlertProperty(eventType, property) {
+    var alerts = localStorage.getItem('sparkradar_alerts');
+
+    if (alerts) {
+        alerts = JSON.parse(alerts);
+    } else {
+        alerts = defaultAlerts
+    }
+
+    var propValue = null; // Default for unknown alerts
+    if (alerts[eventType]) {
+        propValue = alerts[eventType][property];
+    }
+
+    return propValue;
+}
+
+// Function to determine alert color based on event type
+function findAlertColor(eventType) {
+    var alerts = localStorage.getItem('sparkradar_alerts');
+
+    if (alerts) {
+        alerts = JSON.parse(alerts);
+    } else {
+        alerts = defaultAlerts
+    }
+
+    var color = "#ffffff"; // Default for unknown alerts
+    if (alerts[eventType]) {
+        color = alerts[eventType].color;
+    }
+
+    return color;
+}
+
+
+// Fetches and displays active weather alerts from the NWS API
+function loadAlerts(force = false) {
+    fetch('https://api.weather.gov/alerts/active', {headers: {'Accept': 'Application/geo+json'} })
+    .then(response => {
+        if (!response.ok) { throw new Error('NWS Alerts API request failed with code ' + response.status); }
+        return response.json();
+    }) .then(data => {
+        console.log('NWS alert data fetched successfully.');
+
+        // Sort alerts by priority
+        data.features.sort((a, b) => {
+            const priority = {
+                "Dust Advisory": 0,
+                "Dust Storm Warning": 1,
+                "Air Quality Alert": 2,
+                "Flood Advisory": 3,
+                "Flood Warning": 4,
+                "Tropical Storm Watch": 5,
+                "Snow Squall Warning": 6,
+                "Flash Flood Warning": 7,
+                "Marine Weather Statement": 8,
+                "Special Weather Statement": 9,
+                "Severe Thunderstorm Warning": 10,
+                "Tornado Warning": 11
+            };
+            const aPriority = priority[a.properties.event] ?? 99;
+            const bPriority = priority[b.properties.event] ?? 99;
+            return aPriority - bPriority;
+        });
+
+
+        // Get new alert IDs from API
+        const newAlertIds = data.features.filter(f => f.geometry != null).map(f => f.id);
+
+        // Remove expired alerts (layers and sources)
+        alertIds.forEach(oldId => {
+            if (!newAlertIds.includes(oldId)) {
+                // Clear any flashing interval for this alert
+                const layerKey = `alert_${oldId}`;
+                if (alertIntervals[layerKey]) {
+                    clearInterval(alertIntervals[layerKey]);
+                    delete alertIntervals[layerKey];
+                }
+
+                // Remove layers
+                [
+                    layerKey,
+                    `alert_${oldId}_outline`,
+                    `alert_${oldId}_outlineborder`
+                ].forEach(layerId => {
+                    if (map.getLayer(layerId)) map.removeLayer(layerId);
+                });
+                // Remove source
+                if (map.getSource(layerKey)) map.removeSource(layerKey);
+            }
+        });
+
+        // If force reload, remove all existing alerts regardless
+        if (force) {
+            alertIds.forEach(oldId => {
+                // Clear any flashing interval for this alert
+                const layerKey = `alert_${oldId}`;
+                if (alertIntervals[layerKey]) {
+                    clearInterval(alertIntervals[layerKey]);
+                    delete alertIntervals[layerKey];
+                }
+
+                // Remove layers
+                [
+                    layerKey,
+                    `alert_${oldId}_outline`,
+                    `alert_${oldId}_outlineborder`
+                ].forEach(layerId => {
+                    if (map.getLayer(layerId)) map.removeLayer(layerId);
+                });
+
+                // Remove source
+                if (map.getSource(layerKey)) map.removeSource(layerKey);
+            });
+            alertIds = [];
+            alerts = [];
+        }
+
+        // Prepare to add new alerts
+        var newAlerts = [];
+        var newIds = [];
+
+        for (var alert of data.features) {
+            // Only add if not already present
+            if (alertIds.includes(alert.id)) { continue; }
+
+            // Only add if alert is enabled
+            if (!validateAlert(alert.properties.event)) { continue; }
+            
+            // Store the alert ID and data
+            newIds.push(alert.id);
+            newAlerts.push(alert);
+
+            // Find the color for each alert (use local variables to avoid leaking into global scope)
+            let color = findAlertColor(alert.properties.event);
+            let borderColor = findAlertProperty(alert.properties.event, 'border');
+            let flashColor = findAlertProperty(alert.properties.event, 'flash');
+
+            // If the alert has no geometry, follow FIPS codes:
+            if (alert.geometry == null) {
+                // THIS CODE DOES NOT WORK, SEE https://github.com/tgranz/SparkRadar/issues/4
+                continue;
+
+                /*
+                // Add the alert polygon and outlines to the map
+                // Swap lon/lat pairs at any nesting level (handles Polygon / MultiPolygon / rings)
+                function swapCoords(coord) {
+                    if (!Array.isArray(coord)) return coord;
+                    if (typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+                        return [coord[1], coord[0]].concat(coord.slice(2));
+                    }
+                    return coord.map(swapCoords);
+                }
+
+                var fipsCoords = null;
+
+                for (var i of alert.properties.geocode.SAME) {
+                    var fips = i.substring(1); // Removes leading character to convert SAME to FIPS
+
+                    var thisFips = fipsCountyGeometry[fips];
+                    if (thisFips) {
+                        console.log('Found FIPS geometry for code:', fips);
+                        console.debug(thisFips);
+                        fipsCoords = thisFips.geometry;
+                        break;
+                    } else {
+                        console.warn('FIPS code not found in GeoJSON:', fips);
+                        continue;
+                    }
+                };
+
+                if (!fipsCoords) {
+                    // Nothing to draw for this alert
+                    console.warn('No FIPS coordinates found for alert', alert.id);
+                    continue;
+                }
+
+                var coordinates = fipsCoords;
+                console.log(coordinates);
+
+                // Often, there are more than one polygon in the FIPS geometry
+                // Need to draw each one separately
+                // No need to swap coords, already in correct order
+                for (var c = 0; c < coordinates.length; c++) {
+
+                    var alertid = alert.id + '_part' + c;
+                    var coordsPart = coordinates[c];
+                    console.log("Original coords", coordinates)
+                    console.log('Coords part:', coordsPart);
+                    coordinates = [coordsPart];
+
+                    map.addSource(`alert_${alertid}`, {
+                        'type': 'geojson',
+                        'data': {
+                            'type': 'Feature',
+                            'geometry': {
+                                'type': 'Polygon',
+                                'coordinates': coordinates
+                            }
+                        }
+                    });
+
+                    map.addLayer({
+                        'id': `alert_${alertid}`,
+                        'type': 'fill',
+                        'source': `alert_${alertid}`,
+                        'layout': {},
+                        'paint': {
+                            'fill-color': color,
+                            'fill-opacity': 0.5
+                        }
+                    }, 'Ferry line');
+
+                    map.addLayer({
+                        id: `alert_${alertid}_outline`,
+                        type: 'line',
+                        source: `alert_${alertid}`,
+                        paint: {
+                            'line-color': color,
+                            'line-width': 2
+                        }
+                    }, 'Pier road');
+
+                    map.addLayer({
+                        id: `alert_${alertid}_outlineborder`,
+                        type: 'line',
+                        source: `alert_${alertid}`,
+                        paint: {
+                            'line-color': '#000',
+                            'line-width': 6
+                        }
+                    }, `alert_${alertid}_outline`);
+
+                    console.log('Added alert with FIPS geometry:', alertid);
+                }
+                    */
+
+            } else {
+
+                // Add the alert polygon and outlines to the map
+                // Swap lon/lat pairs at any nesting level (handles Polygon / MultiPolygon / rings)
+                function swapCoords(coord) {
+                    if (!Array.isArray(coord)) return coord;
+                    if (typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+                        return [coord[1], coord[0]].concat(coord.slice(2));
+                    }
+                    return coord.map(swapCoords);
+                }
+
+                var coordinates = alert.geometry.coordinates;
+
+                map.addSource(`alert_${alert.id}`, {
+                    'type': 'geojson',
+                    'data': {
+                        'type': 'Feature',
+                        'id': `alert_${alert.id}`,
+                        'geometry': {
+                            'type': 'Polygon',
+                            'coordinates': coordinates
+                        }
+                    }
+                });
+
+                map.addLayer({
+                    'id': `alert_${alert.id}`,
+                    'type': 'fill',
+                    'source': `alert_${alert.id}`,
+                    'layout': {},
+                    'paint': {
+                        'fill-color': color,
+                        'fill-opacity': 0.5
+                    }
+                }, 'Ferry line');
+
+                map.addLayer({
+                    id: `alert_${alert.id}_outline`,
+                    type: 'line',
+                    source: `alert_${alert.id}`,
+                    paint: {
+                        'line-color': borderColor,
+                        'line-width': 2
+                    }
+                }, 'Pier road');
+
+                map.addLayer({
+                    id: `alert_${alert.id}_outlineborder`,
+                    type: 'line',
+                    source: `alert_${alert.id}`,
+                    paint: {
+                        'line-color': '#000',
+                        'line-width': 6
+                    }
+                }, `alert_${alert.id}_outline`);
+
+                // If flashing is enabled, set up a flashing effect
+                if (flashColor !== null && flashColor !== undefined && flashColor !== '#000000') {
+                    let isFlashing = true;
+                    const layerId = `alert_${alert.id}`;
+                    const flashCol = flashColor;
+                    const baseCol = color;
+
+                    // Check if the layer exists before setting the paint property
+                    if (map.getLayer(layerId)) {
+                        // If an interval already exists for this layer, clear it first
+                        if (alertIntervals[layerId]) {
+                            clearInterval(alertIntervals[layerId]);
+                            delete alertIntervals[layerId];
+                        }
+                        const intervalId = setInterval(() => {
+                            // Use the captured colors so changes to globals don't affect ongoing intervals
+                            try {
+                                map.setPaintProperty(layerId, 'fill-color', isFlashing ? flashCol : baseCol);
+                            } catch (e) {
+                                console.warn(`Failed to set paint property for ${layerId}:`, e.message);
+                            }
+                            isFlashing = !isFlashing;
+                        }, 1000);
+                        alertIntervals[layerId] = intervalId;
+                    } else {
+                        console.warn(`Layer ${layerId} does not exist.`);
+                    }
+                }
+
+            }
+
+        };
+
+        // Update global arrays
+        alertIds = alertIds.filter(id => newAlertIds.includes(id)).concat(newIds);
+        alerts = alerts.filter(a => newAlertIds.includes(a.id)).concat(newAlerts);
+
+        data.features.forEach(alert => {
+            // DEBUGGING
+            console.debug(alert)
+
+            // Check that the alert is enabled
+            if (!validateAlert(alert.properties.event)) { return; }
+
+            // Ensure the alert has coordinates
+            if (alert.geometry == null) { return; }
+
+            // Verify there are no duplicate alerts
+            if (alertIds.includes(alert.id)) { return; }
+
+            // Store the alert ID and data
+            alertIds.push(alert.id);
+            alerts.push(alert);
+
+            // Find the color for each alert (use local variables to avoid leaking into global scope)
+            let color = findAlertColor(alert.properties.event);
+            let borderColor = findAlertProperty(alert.properties.event, 'border');
+            let flashColor = findAlertProperty(alert.properties.event, 'flash');
+
+            // Add the alert polygon and outlines to the map
+            var coordinates = alert.geometry.coordinates;
+
+            map.addSource(`alert_${alert.id}`, {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'id': `alert_${alert.id}`,
+                    'geometry': {
+                        'type': 'Polygon',
+                        'coordinates': coordinates
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': `alert_${alert.id}`,
+                'type': 'fill',
+                'source': `alert_${alert.id}`,
+                'layout': {},
+                'paint': {
+                    'fill-color': color,
+                    'fill-opacity': 0.5
+                }
+            }, 'Ferry line');
+
+            map.addLayer({
+                id: `alert_${alert.id}_outline`,
+                type: 'line',
+                source: `alert_${alert.id}`,
+                paint: {
+                    'line-color': borderColor,
+                    'line-width': 2
+                }
+            }, 'Pier road');
+
+            map.addLayer({
+                id: `alert_${alert.id}_outlineborder`,
+                type: 'line',
+                source: `alert_${alert.id}`,
+                paint: {
+                    'line-color': '#000',
+                    'line-width': 6
+                }
+            }, `alert_${alert.id}_outline`);
+
+            // If flashing is enabled, set up a flashing effect
+            if (flashColor !== null && flashColor !== undefined && flashColor !== '#000000') {
+                let isFlashing = true;
+                const layerId = `alert_${alert.id}`;
+                const flashCol = flashColor;
+                const baseCol = color;
+
+                // Check if the layer exists before setting the paint property
+                if (map.getLayer(layerId)) {
+                    // If an interval already exists for this layer, clear it first
+                    if (alertIntervals[layerId]) {
+                        clearInterval(alertIntervals[layerId]);
+                        delete alertIntervals[layerId];
+                    }
+                    const intervalId = setInterval(() => {
+                        // Use the captured colors so changes to globals don't affect ongoing intervals
+                        try {
+                            map.setPaintProperty(layerId, 'fill-color', isFlashing ? flashCol : baseCol);
+                        } catch (e) {
+                            console.warn(`Failed to set paint property for ${layerId}:`, e.message);
+                        }
+                        isFlashing = !isFlashing;
+                    }, 1000);
+                    alertIntervals[layerId] = intervalId;
+                } else {
+                    console.warn(`Layer ${layerId} does not exist.`);
+                }
+            }
+
+        });
+    });
+}
+
+
+function loadSparkAlerts() {
+  var testSparkAlertFetch = {};
+    fetch('https://api.sparkradar.app/alerts?t=' + Date.now())
+    .then(response => {
+        if (!response.ok) { 
+          sendNotification("Spark Alerts API Error", "Failed to fetch sparkalerts data. Status code: " + response.status, "alert-circle-rounded", "#ff2121");
+          throw new Error('Spark Alerts API request failed with code ' + response.status); 
+        }
+        return response.json();
+    }) .then(data => {
+        console.log('Spark alert data fetched successfully.');
+
+        data.alerts.forEach(alert => {
+            // Ensure the alert has coordinates
+            if (alert.coordinates == null) { return; }
+
+            // Verify there are no duplicate alerts, for safety
+            if (alertIds.includes(alert.matchedToken + alert.issueTime)) { return; }
+
+            // Store the alert ID and data
+            alertIds.push(alert.matchedToken + alert.issueTime);
+            alerts.push(alert);
+
+            // Find the color for each alert (local variable)
+            let color = findAlertColor(alert.matchedName);
+
+            // Add the alert polygon and outlines to the map
+            // Swap lat/lon to lon/lat for GeoJSON format, then wrap in array for Polygon
+          // Swap coordinates and close the ring (repeat first coordinate at end)
+          var swappedCoords = alert.coordinates.map(coord => [coord[1], coord[0]]);
+          swappedCoords.push(swappedCoords[0]);  // Close the polygon ring
+          var coordinates = [swappedCoords];
+
+            map.addSource(`alert_${alert.matchedToken + alert.issueTime}`, {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'id': `alert_${alert.matchedToken + alert.issueTime}`,
+                    'geometry': {
+                        'type': 'Polygon',
+                        'coordinates': coordinates
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': `alert_${alert.matchedToken + alert.issueTime}`,
+                'type': 'fill',
+                'source': `alert_${alert.matchedToken + alert.issueTime}`,
+                'layout': {},
+                'paint': {
+                    'fill-color': color,
+                    'fill-opacity': 0.5
+                }
+            }, 'Ferry line');
+
+            map.addLayer({
+                id: `alert_${alert.matchedToken + alert.issueTime}_outline`,
+                type: 'line',
+                source: `alert_${alert.matchedToken + alert.issueTime}`,
+                paint: {
+                    'line-color': color,
+                    'line-width': 2
+                }
+            }, 'Pier road');
+
+            map.addLayer({
+                id: `alert_${alert.matchedToken + alert.issueTime}_outlineborder`,
+                type: 'line',
+                source: `alert_${alert.matchedToken + alert.issueTime}`,
+                paint: {
+                    'line-color': '#000',
+                    'line-width': 6
+                }
+            }, `alert_${alert.matchedToken + alert.issueTime}_outline`);
+
+        });
+    });
+}
+
+</script>
+<script>
+// --- inlined from js/radar.js ---
+
+// Adds the radar layer to the map
+var prevLatestframe = null;
+var radarMode = "mos";
+var radarStation = "CONUS";
+var radarProduct = "SR_BREF";
+var radarStationType = null; // e.g., "WSR-88D" or "TDWR"
+var stationTitle = '';
+var radaranimator = null;
+var firstopen = true;
+var frameidx = 0;
+var prevRadarProduct = null;
+var prevStation = null;
+var latestFrameTime = "";
+var _tileLoadSeq = 0; // sequence for tile loads to ignore stale completions
+// Double-buffer for raster animation to avoid blanking when frames load
+var _bufferIndex = 0; // 0 or 1
+var _bufferSources = ['datalayer_a_src', 'datalayer_b_src'];
+var _bufferLayers = ['datalayer_a', 'datalayer_b'];
+var _activeBuffer = -1; // index of currently visible buffer
+// Track loading state to avoid duplicate loads for same buffer
+var _bufferLoading = [false, false];
+// Sequence counter to identify the most recent radar load request
+var _radarLoadSeq = 0;
+
+// Function to get color table for super-res products
+function getColorTable(product) {
+    switch (product) {
+        case "SNEX_REF":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -30, 'rgb(0, 0, 20)',
+                5, 'rgb(29, 37, 60)',
+                17.5, 'rgb(89, 155, 171)',
+                22.5, 'rgb(33, 186, 72)',
+                32.5, 'rgb(5, 101, 1)',
+                37.5, 'rgb(251, 252, 0)',
+                42.5, 'rgb(253, 149, 2)',
+                50, 'rgb(253, 38, 0)',
+                60, 'rgb(193, 148, 179)',
+                70, 'rgb(165, 2, 215)',
+                75, 'rgb(135, 255, 253)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_VEL":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -35, 'rgb(0, 255, 0)',
+                -25, 'rgb(0, 200, 0)',
+                -5, 'rgb(0, 100, 0)',
+                0, 'rgb(100, 100, 100)',
+                5, 'rgb(100, 0, 0)',
+                25, 'rgb(200, 0, 0)',
+                35, 'rgb(255, 0, 0)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_CC":
+            return { 
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                0.2, 'rgb(0, 0, 0)',
+                0.7, 'rgb(0, 0, 255)',
+                0.85, 'rgb(0, 255, 0)',
+                0.90, 'rgb(255, 255, 0)',
+                0.95, 'rgb(255, 0, 0)',
+                1.00, 'rgb(150, 0, 150)',
+                1.05, 'rgb(255, 255, 255)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_ZDR":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                -8, 'rgb(0, 0, 0)',
+                0, 'rgb(255, 255, 255)',
+                0.5, 'rgb(0, 0, 255)',
+                2, 'rgb(0, 255, 0)',
+                2.5, 'rgb(255, 255, 0)',
+                5, 'rgb(255, 0, 0)',
+                6, 'rgb(150, 0, 150)',
+                8, 'rgb(255, 255, 255)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+        case "SNEX_SW":
+            return {
+                'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'val'],
+                1, 'rgb(50, 50, 50)',
+                10, 'rgb(100, 100, 100)',
+                20, 'rgb(255, 0, 0)',
+                30, 'rgb(0, 255, 255)',
+                33, 'rgb(150, 255, 255)',
+                40, 'rgb(0, 255, 0)'
+                ],
+                'fill-opacity': 1,
+                'fill-outline-color': 'rgba(0,0,0,0)'
+            };
+    }
+}
+
+// Loads the radar stations
+function loadRadarStations(onlyremove=false) {
+    if (onlyremove) {
+        if (map.getSource('radar-stations')) {
+            try{ if (map.getLayer('radar-stations')) map.removeLayer('radar-stations'); } catch {}
+            map.removeSource('radar-stations');
+        }
+        return;
+    }
+
+    fetch('https://api.weather.gov/radar/stations')
+        .then(response => {
+            if (!response.ok) { throw new Error('NWS Radar Stations API request failed with code ' + response.status); }
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !data.features) return;
+
+            // Remove previous radar station layers/sources if they exist
+            if (map.getSource('radar-stations')) {
+                try { if (map.getLayer('radar-stations')) map.removeLayer('radar-stations'); } catch {}
+                map.removeSource('radar-stations');
+            }
+
+            // Prepare GeoJSON for stations
+            const stationsGeoJSON = {
+                type: 'FeatureCollection',
+                features: data.features.map(station => {
+                    const coords = station.geometry?.coordinates;
+                    const status = station.properties.rda?.properties.status;
+                    var opcolor, unopcolor, type;
+                    try { type = station.properties.stationType } catch {};
+
+                    // TDWR stations enabled
+
+                    if (type === "TDWR") {
+                        opcolor = "#00af00";
+                        unopcolor = "#af1616ff";
+                    } else {
+                        opcolor = "#27beff";
+                        unopcolor = "#ff2121";
+                    }
+
+                    return {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: coords
+                        },
+                        properties: {
+                            id: station.id,
+                            status: status,
+                            type: type || null,
+                            color: status === "Operate" ? opcolor : unopcolor,
+                        }
+                    };
+                }).filter(f => f.geometry && f.geometry.coordinates)
+            };
+
+            // Add source and layer for stations
+            map.addSource('radar-stations', {
+                type: 'geojson',
+                data: stationsGeoJSON
+            });
+
+            map.addLayer({
+                id: 'radar-stations',
+                type: 'circle',
+                source: 'radar-stations',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': ['get', 'color'],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#111'
+                }
+            });
+
+            // Optional: Add click handler to show station info
+            map.on('click', 'radar-stations', (e) => {
+                const feature = e.features[0];
+                const props = feature.properties;
+                const coords = feature.geometry.coordinates;
+
+                map.flyTo({ center: coords });
+
+                radarMode = "station";
+                radarProduct = "SR_BREF";
+                radarStationType = props.type || null;
+                // Refresh the product list
+                openProductChooser(false)
+                // Load radar for clicked station
+                setTimeout(() => {
+                    document.getElementById("animationSlider").value = document.getElementById("animationSlider").max;
+                }, 1000);
+                loadRadar(props.id.slice(-4), false, true);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching radar stations:', error);
+        });
+}
+
+
+// Fetch available radar frame times from the WMS GetCapabilities endpoint
+function getRadarFrameTimes(radarStation, superres = false) {
+    if (superres) return Promise.resolve([]); // No frame times for super-res products
+
+    let url = null;
+
+    if (radarStation.toLowerCase() === "canmos") {
+        url = `https://geo.weather.gc.ca/geomet/?lang=en&service=WMS&version=1.3.0&layers=RADAR_1KM_RRAI&request=GetCapabilities&cache_bust=${Date.now()}`;
+    } else {
+        url = `https://opengeo.ncep.noaa.gov/geoserver/${radarStation.toLowerCase()}/ows?service=wms&version=1.3.0&request=GetCapabilities&cache_bust=${Date.now()}`;
+    }
+
+    return fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Network error: ' + response.statusText);
+            return response.text();
+        })
+        .then(text => {
+            const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
+            const capabilityLayer = xmlDoc.querySelector("WMS_Capabilities > Capability > Layer");
+            if (!capabilityLayer) return [];
+
+            const now = new Date(); // Current UTC time for filtering
+            return Array.from(capabilityLayer.querySelectorAll("Layer")).map(layer => {
+                let timesRaw = layer.querySelector("Dimension")?.textContent || "";
+                let times = [];
+                const layerName = layer.querySelector("Name")?.textContent || null;
+
+                console.debug(`Raw time dimension for ${layerName}:`, timesRaw); // Debug raw time data
+
+                if (radarStation.toLowerCase() === "canmos" && timesRaw.includes("/")) {
+                    if (layerName === "RADAR_1KM_RRAI") {
+                        // Expand interval string into timestamps
+                        const [start, end, step] = timesRaw.split("/");
+                        if (start && end && step) {
+                            let stepMs = 0;
+                            const match = step.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                            if (match) {
+                                const hours = parseInt(match[1] || "0", 10);
+                                const minutes = parseInt(match[2] || "0", 10);
+                                const seconds = parseInt(match[3] || "0", 10);
+                                stepMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                            }
+                            let current = new Date(start);
+                            const endDate = new Date(end);
+                            // Only include timestamps <= current time
+                            while (current <= endDate && current <= now) {
+                                // Format timestamp to match server (no milliseconds)
+                                const formattedTime = current.toISOString().replace(/\.\d{3}Z$/, "Z");
+                                times.push(formattedTime);
+                                current = new Date(current.getTime() + stepMs);
+                            }
+                            console.debug(`Parsed timestamps for ${layerName}:`, times); // Debug parsed times
+                        }
+                    } else {
+                        times = []; // Empty for non-RADAR_1KM_RRAI layers
+                    }
+                } else {
+                    // For layers with comma-separated timestamps, remove milliseconds
+                    times = timesRaw
+                        .split(",")
+                        .filter(t => t && new Date(t) <= now)
+                        .map(t => t.trim().replace(/\.\d{3}Z$/, "Z")); // Normalize format
+                    console.debug(`Parsed timestamps for ${layerName}:`, times); // Debug parsed times
+                }
+
+                // Sort times from oldest to latest
+                times.sort((a, b) => new Date(a) - new Date(b));
+
+                return {
+                    name: layerName,
+                    description: layer.querySelector("Abstract")?.textContent || null,
+                    times
+                };
+            });
+        })
+        .catch(error => {
+            console.error('getRadarFrameTimes:', error);
+            return [];
+        });
+}
+
+
+function safeRemoveLayerAndSource(layerId, sourceId) {
+    return new Promise((resolve) => {
+        const layerExists = !!map.getLayer(layerId);
+        const sourceExists = !!map.getSource(sourceId);
+        if (!layerExists && !sourceExists) return resolve();
+        if (layerExists) map.removeLayer(layerId);
+        const tryRemoveSource = () => {
+            if (!map.getSource(sourceId)) return resolve();
+
+            const stillUsed = map
+                .getStyle()
+                .layers.some((l) => l.source === sourceId);
+
+            if (stillUsed) {
+                map.once('styledata', tryRemoveSource);
+            } else {
+                map.removeSource(sourceId);
+                resolve();
+            }
+        };
+
+        tryRemoveSource();
+        map.once('styledata', tryRemoveSource);
+    });
+}
+
+
+var firstUse = true;
+
+async function loadRadar(station = radarStation, isAnim = false, force = false) {
+    const requestSeq = ++_radarLoadSeq;
+    station = station.toUpperCase();
+
+    // === NEW: If station or product actually changed, reset double buffer state ===
+    if (station != radarStation || prevRadarProduct !== null && prevRadarProduct !== radarProduct) {
+        // Clean both buffers completely
+        _bufferSources.forEach((srcId, i) => {
+            const lyrId = _bufferLayers[i];
+            if (map.getLayer(lyrId)) map.removeLayer(lyrId);
+            if (map.getSource(srcId)) map.removeSource(srcId);
+        });
+        _activeBuffer = -1;
+        _bufferIndex = 0;
+    }
+
+    // Now update the global station variable
+    radarStation = station;
+
+    // Check is this is a superres product
+    const superres = radarProduct.startsWith("SNEX_");
+
+    // Prepare variables
+    let superresdata = null;
+    let times = [];
+    let latestframe = null;
+
+    try {
+        if (superres) {
+            // Fetch geojson from SparkNEXRAD (use radarProduct, not undefined "product")
+            const resp = await fetch(`https://radar.sparkradar.app/data/${station}/${radarProduct.replace("SNEX_", "")}`);
+            if (!resp.ok) throw new Error(`Failed to load super-res data: ${resp.status}`);
+            const geojson = await resp.json();
+            if (!geojson || geojson.type !== 'FeatureCollection') {
+                throw new Error('Invalid GeoJSON format received from server');
+            }
+            superresdata = geojson;
+        } else {
+            const stationFrames = await getRadarFrameTimes(station, superres);
+            // If another request started after this one, abort work
+            if (requestSeq !== _radarLoadSeq) return;
+
+            if (!stationFrames || stationFrames.length === 0) {
+                console.error("No radar frames available for station:", station);
+                document.getElementById("liveIndicator").style.background = "#ff2121";
+                return;
+            }
+
+            if (station === "CANMOS") {
+                const layerData = stationFrames.find(l => l.name === "RADAR_1KM_RRAI") || stationFrames[2];
+                times = layerData?.times || [];
+            } else {
+                const wantLayer = (station.toLowerCase() === "conus")
+                    ? "conus_bref_qcd"
+                    : `${station.toLowerCase()}_${(radarProduct||"").toLowerCase()}`;
+                const layerData = stationFrames.find(l => (l.name || "").toLowerCase() === wantLayer.toLowerCase()) || stationFrames[0];
+                times = layerData?.times || [];
+            }
+
+            if (times.length === 0) {
+                console.error("No valid timestamps for station:", station);
+                return;
+            }
+
+            // Set slider bounds
+            const maxIdx = times.length - 1;
+            const minIdx = Math.max(0, maxIdx - 12);
+            document.getElementById("animationSlider").max = maxIdx;
+            document.getElementById("animationSlider").min = minIdx;
+
+            if (firstUse) {
+                document.getElementById("animationSlider").value = maxIdx;
+                firstUse = false;
+            }
+
+            frameidx = parseInt(document.getElementById("animationSlider").value);
+
+            if (firstopen && document.getElementById("animationSlider").value == maxIdx) firstopen = false;
+
+            latestframe = times[frameidx];
+            document.getElementById("animationtime").innerText = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+    } catch (err) {
+        console.error('Error preparing radar data:', err);
+        return;
+    }
+
+    // If nothing changed, skip (handle superres separately since there's no timestamp)
+    if (!force) {
+        if (!superres) {
+            if (station === prevStation && radarProduct === prevRadarProduct && latestframe === prevLatestframe) {
+                console.log("Radar time unchanged, skipping update.");
+                return;
+            }
+        } else {
+            if (station === prevStation && radarProduct === prevRadarProduct && _activeBuffer !== -1) {
+                console.log("Super-res product unchanged, skipping update.");
+                return;
+            }
+        }
+    }
+
+    console.log("Updating radar to frame:", latestframe || '(Super-res)');
+    prevLatestframe = latestframe;
+    prevRadarProduct = radarProduct;
+    prevStation = station;
+
+    document.title = "Spark Radar | " + station;
+
+    if (station === "CANMOS") {
+        stationTitle = "CANADIAN MOSAIC";
+        radarMode = "canmos";
+    } else if (radarMode === "mos") {
+        stationTitle = "CONUS MOSAIC";
+    } else {
+        stationTitle = station;
+    }
+
+    document.getElementById("radarTitle").innerHTML = stationTitle;
+    document.getElementById("radarTitle2").innerHTML = latestFrameTime;
+
+    // Build WMS URL for non-superres products
+    var tilesUrl;
+    if (!superres) {
+        if (station.toLowerCase() == "canmos") {
+            tilesUrl = `https://geo.weather.gc.ca/geomet?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&TRANSPARENT=true&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&LAYERS=RADAR_1KM_RRAI&FORMAT=image/png&TIME=${latestframe}`;
+        } else if (station.toLowerCase() == "conus") {
+            tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/${station.toLowerCase()}_bref_qcd/ows?service=WMS&request=GetMap&layers=${station.toLowerCase()}_bref_qcd&format=image/png&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+        } else {
+            var layerstr = `${station.toLowerCase()}_${radarProduct.toLowerCase()}`;
+            tilesUrl = `https://opengeo.ncep.noaa.gov/geoserver/${station.toLowerCase()}/ows?service=WMS&request=GetMap&format=image/png&transparent=true&layers=${layerstr}&transparent=true&version=1.4.1&time=${latestframe}&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}`;
+        }
+    }
+
+    // Double buffering
+    const newBuffer = _bufferIndex;
+    const newSourceId = _bufferSources[newBuffer];
+    const newLayerId = _bufferLayers[newBuffer];
+    // Track tile load order so stale completions can be ignored
+    const tileSeq = ++_tileLoadSeq;
+
+    // Clean up any existing layer/source with same ID
+    try { if (map.getLayer(newLayerId)) map.removeLayer(newLayerId); } catch {}
+    try { if (map.getSource(newSourceId)) map.removeSource(newSourceId); } catch {}
+
+    // Add new source and layer
+    let desiredOpacity = 1;
+    if (superres) {
+        map.addSource(newSourceId, {
+            type: 'geojson',
+            data: superresdata
+        });
+
+        // Clone paint properties so we can animate opacity safely
+        const basePaint = getColorTable(radarProduct) || {};
+        desiredOpacity = basePaint['fill-opacity'] ?? 1;
+        const paintProps = JSON.parse(JSON.stringify(basePaint));
+        paintProps['fill-opacity'] = 0; // start transparent
+        if (!paintProps['fill-outline-color']) paintProps['fill-outline-color'] = 'rgba(0,0,0,0)';
+
+        map.addLayer({
+            id: newLayerId,
+            type: 'fill',
+            source: newSourceId,
+            paint: paintProps
+        }, 'Pier');
+    } else {
+        map.addSource(newSourceId, {
+            type: "raster",
+            tiles: [tilesUrl],
+            tileSize: radaranimator ? 1024 : 256 // use higher res when paused (radaranimator null => paused)
+        });
+
+        map.addLayer({
+            id: newLayerId,
+            type: "raster",
+            source: newSourceId,
+            paint: { "raster-opacity": 0, "raster-fade-duration": 250, "raster-resampling": "linear" }
+        }, 'Pier');
+    }
+
+    // Wait for new source to load before fading in
+    const onSourceData = (e) => {
+        if (e.sourceId !== newSourceId || !e.isSourceLoaded) return;
+        // If this handler is stale (older request or tiles), clean up its own resources and exit
+        if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
+            map.off('sourcedata', onSourceData);
+            safeRemoveLayerAndSource(newLayerId, newSourceId).catch(() => {});
+            return;
+        }
+
+        map.off('sourcedata', onSourceData);
+
+        // Fade in the new frame (guard in case the layer was removed concurrently)
+        try {
+            if (map.getLayer(newLayerId)) {
+                if (superres) {
+                    map.setPaintProperty(newLayerId, 'fill-opacity', desiredOpacity);
+                } else {
+                    map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                }
+            }
+        } catch (err) {
+            console.debug('Could not set paint property for new layer (it may have been removed):', newLayerId);
+        }
+
+
+        // Crossfade: now that the new frame is loaded, gently fade out the previous buffer and remove it.
+        if (_prevLayerId && _prevSourceId && _prevLayerId !== newLayerId) {
+            try {
+                if (map.getLayer(_prevLayerId)) {
+                    const prevType = map.getLayer(_prevLayerId).type;
+                    if (prevType === 'raster') {
+                        map.setPaintProperty(_prevLayerId, 'raster-opacity', 0);
+                    } else {
+                        map.setPaintProperty(_prevLayerId, 'fill-opacity', 0);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            // Wait a moment for the fade to complete, then clean up
+            setTimeout(() => {
+                safeRemoveLayerAndSource(_prevLayerId, _prevSourceId).catch(() => {});
+            }, 350);
+        }
+
+        if (!superres) {
+            latestFrameTime = new Date(latestframe).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            document.getElementById("radarTitle2").innerHTML = latestFrameTime;
+        } else {
+            document.getElementById("radarTitle2").innerHTML = 'LATEST';
+        }
+
+        switch (radarProduct) {
+            case "SR_BREF":
+                document.getElementById("radarProductTitle").innerHTML = "Base Reflectivity";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%3E%0A%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23111%22/%3E%0A%3Ctext%20x%3D%2250%25%22%20y%3D%2254%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3EBREF%3C/text%3E%0A%3C/svg%3E')";
+                break;
+            case "SR_BVEL":
+                document.getElementById("radarProductTitle").innerHTML = "Base Velocity";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/bvel.png')";
+                break;
+            case "BOHA":
+                document.getElementById("radarProductTitle").innerHTML = "1-hr Accumulated Precipitation";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/boha.png')";
+                break;
+            case "BDSA":
+                document.getElementById("radarProductTitle").innerHTML = "Storm Total Accumulation";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/bdsa.png')";
+                break;
+            case "BDHC":
+                document.getElementById("radarProductTitle").innerHTML = "Precipitation Classification";
+                document.getElementById("palette").style.background = "url('assets/radarcolors/pcpn.png')";
+                break;
+            case "SNEX_REF":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Reflectivity";
+                break;
+            case "SNEX_VEL":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Velocity";
+                break;
+            case "SNEX_CC":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Correlation Coefficient";
+                break;
+            case "SNEX_ZDR":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Differential Reflectivity";
+                break;
+            case "SNEX_SW":
+                document.getElementById("radarProductTitle").innerHTML = "Super-Res Spectrum Width";
+                break;
+            default:
+                document.getElementById("radarProductTitle").innerHTML = radarProduct;
+        }
+
+        // Check if live indicator should be shown
+        const maxSliderIdx = parseInt(document.getElementById("animationSlider").max);
+        if (frameidx >= maxSliderIdx || superres) {
+            document.getElementById("radarTitle2").style.color = "#00af00";
+        } else {
+            document.getElementById("radarTitle2").style.color = "#ffcc00";
+        }
+
+        // === Keep previous buffer visible until the new frame is fully loaded (prevents "flash") ===
+        const _prevBuffer = _activeBuffer;
+        const _prevLayerId = (_prevBuffer !== -1) ? _bufferLayers[_prevBuffer] : null;
+        const _prevSourceId = (_prevBuffer !== -1) ? _bufferSources[_prevBuffer] : null;
+
+        // Activate new buffer
+
+        _activeBuffer = newBuffer;
+        _bufferIndex = 1 - _bufferIndex;
+    };
+
+    map.on('sourcedata', onSourceData);
+
+    // Optional timeout fallback in case sourcedata never fires
+    setTimeout(() => {
+        // Ignore if another request/tile load superseded this one
+        if (requestSeq !== _radarLoadSeq || tileSeq !== _tileLoadSeq) {
+            map.off('sourcedata', onSourceData);
+            return;
+        }
+        // Ensure the layer still exists before querying/setting paint properties
+        try {
+            if (map.getLayer(newLayerId)) {
+                const lyrType = map.getLayer(newLayerId).type;
+                if (lyrType === 'raster') {
+                    if (map.getPaintProperty(newLayerId, 'raster-opacity') === 0) map.setPaintProperty(newLayerId, 'raster-opacity', 1);
+                } else {
+                    if (map.getPaintProperty(newLayerId, 'fill-opacity') === 0) map.setPaintProperty(newLayerId, 'fill-opacity', desiredOpacity);
+                }
+            }
+        } catch (err) {
+            console.debug('Radar timeout fallback: layer missing or unavailable', newLayerId);
+        }
+        map.off('sourcedata', onSourceData);
+    }, 8000);
+}
+
+// Animation controls
+animationSlider.oninput = function() {
+    loadRadar(radarStation);
+}
+
+animationplaypause.onclick = function () {
+    if (radaranimator) {
+        clearInterval(radaranimator);
+        radaranimator = null;
+        document.getElementById("animationplaypause").innerHTML = `<i class="ti ti-player-play-filled"></i>`;
+
+        // Force reload current frame in high resolution
+        setTimeout(() => loadRadar(radarStation, false, true), 100);
+    } else {
+        document.getElementById("animationplaypause").innerHTML = `<i class="ti ti-player-pause-filled"></i>`;
+        radaranimator = setInterval(() => {
+            let val = parseInt(animationSlider.value);
+            if (val >= parseInt(animationSlider.max)) {
+                animationSlider.value = animationSlider.min;
+            } else {
+                animationSlider.value = val + 1;
+            }
+            loadRadar(radarStation);
+        }, 800); // Slightly faster/smoother than 1000ms
+    }
+};
+</script>
+<script>
+// --- inlined from js/tools.js ---
+// Location handlers
+let locationMarker = null;
+let watchId = null;
+let isLocationOn = false;
+let nowlat = null;
+let nowlon = null;
+
+function startUpdatingLocation() {
+    isLocationOn = document.getElementById("geolocate").classList.contains('toolbtn-active');
+    if (navigator.geolocation) {
+        if (watchId === null) {
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    nowlat = lat;
+                    nowlon = lon;
+
+                    // Create GeoJSON for the marker
+                    const geojson = {
+                        type: 'FeatureCollection',
+                        features: [{
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [lon, lat]
+                            }
+                        }]
+                    };
+
+                    // Add or update the marker source/layer
+                    if (map.getSource('location-marker')) {
+                        map.getSource('location-marker').setData(geojson);
+                    } else {
+                        map.addSource('location-marker', {
+                            type: 'geojson',
+                            data: geojson
+                        });
+                        map.addLayer({
+                            id: 'location-marker',
+                            type: 'circle',
+                            source: 'location-marker',
+                            paint: {
+                                'circle-radius': 10,
+                                'circle-color': '#2a7fff',
+                                'circle-stroke-width': 2,
+                                'circle-stroke-color': '#fff'
+                            }
+                        });
+                    }
+
+                    if (isLocationOn) {
+                        map.flyTo({center: [lon, lat], zoom: 10});
+                    }
+                },
+                (error) => {
+                    if (!map.getSource('location-marker')) {
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                console.warn("User denied the request for Geolocation.");
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                sendNotification("Unable to geolocate", "Your position is unavailable. Either your device does not support GPS, GPS is off, or GPS signal is too weak.", "location-cancel", "#ffcc00");
+                                console.warn("Location information is unavailable.");
+                                break;
+                            case error.TIMEOUT:
+                                sendNotification("Unable to geolocate", "Took too long to receive a location, perhaps GPS is too weak.", "location-cancel", "#ffcc00");
+                                console.warn("The request to get user location timed out.");
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                sendNotification("Unable to geolocate", "An error occurred while trying to find your location.", "location-cancel", "#ffcc00");
+                                console.warn("An unknown error occurred while trying to fetch user's location.");
+                                break;
+                        }
+                        document.getElementById("geolocate").classList.remove('toolbtn-active');
+                        clearCurrentLocationMarker();
+                        isLocationOn = false;
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 10000
+                }
+            );
+        }
+    } else {
+        alert("Your browser doesn't support location. Try a different browser to use this feature.");
+        document.getElementById("geolocate").classList.remove('toolbtn-active');
+        isLocationOn = false;
+    }
+}
+
+function clearCurrentLocationMarker() {
+    if (map.getLayer('location-marker')) map.removeLayer('location-marker');
+    if (map.getSource('location-marker')) map.removeSource('location-marker');
+    locationMarker = null;
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+}
+
+function toggleLocation() {
+    isLocationOn = document.getElementById("geolocate").classList.contains('toolbtn-active');
+
+    if (!isLocationOn) {
+        startUpdatingLocation();
+        document.getElementById("geolocate").classList.add('toolbtn-active');
+    } else {
+        clearCurrentLocationMarker();
+        document.getElementById("geolocate").classList.remove('toolbtn-active');
+    }
+}
+
+
+// Refresh handlers
+// The 3-second cooldown prevents spamming requests
+let refreshCooldown = false;
+function refresh() {
+    if (refreshCooldown) return;
+    
+    if (sparkalertsEnabled) setTimeout(() => loadSparkAlerts(), 1000); // Temporary impleementation
+    loadAlerts();
+    loadRadar(radarStation, false, false);
+    console.log('Data refresh called.');
+
+    refreshCooldown = true;
+    setTimeout(() => { refreshCooldown = false; }, 3000);
+}
+
+// Refresh every 20 seconds
+map.on('load', () => { refresh(); setInterval(refresh, 20000); });
+
+// Event listener for refresh button
+document.getElementById("refreshBtn").addEventListener('click', () => {
+    refresh();
+});
+
+
+// Measure
+const measureBtn = document.getElementById('measureBtn');
+document.getElementById('measureinfo').style.display = 'none';
+var measuring = false;
+var measureCircle = null;
+var measureCenter = null;
+var measureRadius = null;
+
+function milesFromMeters(meters) {
+    return (meters / 1609.344).toFixed(2);
+}
+
+const onClick = (e) => {
+    if (!measureCenter) {
+        measureCenter = [e.lngLat.lng, e.lngLat.lat];
+
+        // Add marker dot at start location
+        map.addSource('measure-dot', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: measureCenter
+                }
+            }
+        });
+        map.addLayer({
+            id: 'measure-dot',
+            type: 'circle',
+            source: 'measure-dot',
+            paint: {
+                'circle-radius': 7,
+                'circle-color': '#2a7fff',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#fff'
+            }
+        });
+    } else {
+        // Second click: finish measuring
+        measuring = false;
+        map.getCanvas().style.cursor = '';
+        map.off('mousemove', onMove);
+        map.off('click', onClick);
+
+        // Show radius label
+        document.getElementById('measureinfo').style.display = 'block';
+        document.getElementById('measurelength').innerHTML = `Distance: ${milesFromMeters(measureRadius)} mi`;
+    }
+};
+
+const onMove = (e) => {
+    if (!measureCenter) return;
+    const from = turf.point(measureCenter);
+    const to = turf.point([e.lngLat.lng, e.lngLat.lat]);
+    measureRadius = turf.distance(from, to, { units: 'miles' }) * 1609.344; // meters
+
+    measureCircle = turf.circle(measureCenter, milesFromMeters(measureRadius), {
+        steps: 128,
+        units: 'miles'
+    });
+
+    // Draw circle
+    if (map.getSource('measure-circle')) {
+        map.getSource('measure-circle').setData(measureCircle);
+    } else {
+        map.addSource('measure-circle', {
+            type: 'geojson',
+            data: measureCircle
+        });
+        map.addLayer({
+            id: 'measure-circle-fill',
+            type: 'fill',
+            source: 'measure-circle',
+            paint: {
+                'fill-color': '#2a7fff',
+                'fill-opacity': 0.2
+            }
+        });
+        map.addLayer({
+            id: 'measure-circle',
+            type: 'line',
+            source: 'measure-circle',
+            paint: {
+                'line-color': '#2a7fff',
+                'line-width': 3
+            }
+        });
+    }
+
+    // Draw dotted line from dot to cursor
+    const lineGeo = {
+        type: 'Feature',
+        geometry: {
+            type: 'LineString',
+            coordinates: [measureCenter, [e.lngLat.lng, e.lngLat.lat]]
+        }
+    };
+    if (map.getSource('measure-line')) {
+        map.getSource('measure-line').setData(lineGeo);
+    } else {
+        map.addSource('measure-line', {
+            type: 'geojson',
+            data: lineGeo
+        });
+        map.addLayer({
+            id: 'measure-line',
+            type: 'line',
+            source: 'measure-line',
+            paint: {
+                'line-color': '#000',
+                'line-width': 2,
+                'line-dasharray': [2, 2]
+            }
+        });
+    }
+};
+
+measureBtn.addEventListener('click', () => {
+    if (measureBtn.classList.contains('toolbtn-active')) {
+        measureBtn.classList.remove("toolbtn-active");
+        measuring = false;
+        map.getCanvas().style.cursor = '';
+        map.off('mousemove', onMove);
+        map.off('click', onClick);
+        if (map.getLayer('measure-circle')) map.removeLayer('measure-circle');
+        if (map.getLayer('measure-circle-fill')) map.removeLayer('measure-circle-fill');
+        if (map.getSource('measure-circle')) map.removeSource('measure-circle');
+        if (map.getLayer('measure-dot')) map.removeLayer('measure-dot');
+        if (map.getSource('measure-dot')) map.removeSource('measure-dot');
+        if (map.getLayer('measure-line')) map.removeLayer('measure-line');
+        if (map.getSource('measure-line')) map.removeSource('measure-line');
+        document.getElementById('measurelength').innerHTML = `Distance: 0mi.`;
+        document.getElementById('measureinfo').style.display = 'none';
+        measureCenter = null;
+        measureRadius = null;
+        measureCircle = null;
+        measureBtn.classList.remove('toolbtn-active');
+        return;
+    }
+
+    measureBtn.classList.add('toolbtn-active');
+
+    if (!measuring) {
+        measuring = true;
+        map.getCanvas().style.cursor = 'crosshair';
+
+        map.on('mousemove', onMove);
+        map.on('click', onClick);
+    }
+});
+
+
+// Drawing tool
+const drawBtn = document.getElementById('drawBtn');
+var drawing = false;
+var drawColor = '#27beff';
+
+// Canvas drawing functionality
+const drawCanvas = document.createElement('canvas');
+drawCanvas.id = 'drawCanvas';
+drawCanvas.style.position = 'absolute';
+drawCanvas.style.top = '0';
+drawCanvas.style.left = '0';
+drawCanvas.style.cursor = 'crosshair';
+drawCanvas.style.display = 'none';
+drawCanvas.style.zIndex = '10';
+
+document.body.appendChild(drawCanvas);
+
+const ctx = drawCanvas.getContext('2d');
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let lastMidX = 0;
+let lastMidY = 0;
+
+function resizeCanvas() {
+    drawCanvas.width = window.innerWidth;
+    drawCanvas.height = window.innerHeight;
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const pos = e.touches ? e.touches[0] : e;
+    lastX = pos.clientX;
+    lastY = pos.clientY;
+    lastMidX = lastX;
+    lastMidY = lastY;
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+
+    const pos = e.touches ? e.touches[0] : e;
+    const currentX = pos.clientX;
+    const currentY = pos.clientY;
+    const midX = (lastX + currentX) / 2;
+    const midY = (lastY + currentY) / 2;
+
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(lastMidX, lastMidY);
+    ctx.quadraticCurveTo(lastX, lastY, midX, midY);
+    ctx.stroke();
+
+    lastX = currentX;
+    lastY = currentY;
+    lastMidX = midX;
+    lastMidY = midY;
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+}
+
+drawCanvas.addEventListener('mousedown', startDrawing);
+drawCanvas.addEventListener('mousemove', draw);
+drawCanvas.addEventListener('mouseup', stopDrawing);
+drawCanvas.addEventListener('mouseleave', stopDrawing);
+drawCanvas.addEventListener('touchstart', startDrawing);
+drawCanvas.addEventListener('touchmove', draw);
+drawCanvas.addEventListener('touchend', stopDrawing);
+drawCanvas.addEventListener('touchcancel', stopDrawing);
+window.addEventListener('resize', resizeCanvas);
+
+const drawClick = () => {
+    if (!drawing) return;
+    resizeCanvas();
+    drawCanvas.style.display = 'block';
+};
+
+// Update drawBtn listener to show/hide canvas
+drawBtn.addEventListener('click', () => {
+    const drawingToolbar = document.getElementById('drawingtoolbar');
+    const infoBox = document.getElementById('info');
+    const toolbar = document.getElementById('toolbar');
+    
+    if (drawBtn.classList.contains('toolbtn-active')) {
+        drawBtn.classList.remove("toolbtn-active");
+        drawing = false;
+        drawCanvas.style.display = 'none';
+        clearCanvas();
+        map.getCanvas().style.cursor = '';
+        
+        // Slide out animations
+        drawingToolbar.classList.remove('slide-in');
+        drawingToolbar.classList.add('slide-out');
+        infoBox.classList.remove('slide-out');
+        infoBox.classList.add('slide-in');
+        toolbar.classList.remove('slide-out');
+        toolbar.classList.add('slide-in');
+        return;
+    }
+
+    drawBtn.classList.add('toolbtn-active');
+    drawing = true;
+    resizeCanvas();
+    drawCanvas.style.display = 'block';
+    
+    // Slide in animations
+    drawingToolbar.classList.remove('slide-out');
+    drawingToolbar.classList.add('slide-in');
+    infoBox.classList.remove('slide-in');
+    infoBox.classList.add('slide-out');
+    toolbar.classList.remove('slide-in');
+    toolbar.classList.add('slide-out');
+});
+
+function updatePreviewDrawingColor() {
+    const picker = document.getElementById('draw-color-picker');
+    if (!picker) return;
+    picker.style.backgroundColor = drawColor;
+    picker.style.color = readableTextColor(drawColor);
+}
+
+updatePreviewDrawingColor();
+
+document.getElementById('draw-color-picker').addEventListener('click', () => {
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = drawColor;
+    colorInput.style.position = 'absolute';
+    colorInput.style.left = '-9999px'; // Offscreen
+    document.body.appendChild(colorInput);
+
+    colorInput.addEventListener('input', (e) => {
+        drawColor = e.target.value;
+        updatePreviewDrawingColor();
+    });
+
+    colorInput.click();
+    document.body.removeChild(colorInput);
+});
+</script>
+<script>
+// --- inlined from js/menu.js ---
+// Menu toggle: slide in/out
+const menuBtn = document.getElementById('menuBtn');
+const menu = document.getElementById('menu');
+const menuCloser = document.getElementById('menucolser');
+
+function openMenu() {
+    menu.classList.add('open');
+}
+
+function closeMenu() {
+    menu.classList.remove('open');
+}
+
+function openMenuItem(id) {
+    //document.getElementById("menu-settings").style.display = 'none';
+    document.getElementById("menu-menu").style.display = 'none';
+    document.getElementById("menu-about").style.display = 'none';
+    document.getElementById("menu-settings").style.display = 'none';
+    document.getElementById("menu-contact").style.display = 'none';
+
+    document.getElementById(id).style.display = 'flex';
+
+    if (id == 'menu-menu') {
+        document.getElementById("menutitlebar").innerHTML = `<img src="assets/logo-rounded.png" style="height: 28px; width: 28px; vertical-align: bottom; margin-right: -4px;"><span id="menutitle">SparkRadar.app</span>`;
+    } else if (id == 'menu-about') {
+        document.getElementById("menutitlebar").innerHTML = '<span style="font-size: 20px; font-weight: bolder; margin: 10px;">About</span>';
+    } else if (id == 'menu-settings') {
+        document.getElementById("menutitlebar").innerHTML = '<span style="font-size: 20px; font-weight: bolder; margin: 10px;">Settings</span>';
+    } else if (id == 'menu-contact') {
+        document.getElementById("menutitlebar").innerHTML = '<span style="font-size: 20px; font-weight: bolder; margin: 10px;">Contact</span>';
+    }
+}
+
+if (menuBtn) menuBtn.addEventListener('click', openMenu);
+if (menuCloser) menuCloser.addEventListener('click', () => {
+    if (document.getElementById("menu-menu").style.display == 'flex') {
+        closeMenu();
+    } else {
+        openMenuItem('menu-menu');
+    }
+});
+
+// Close menu when pressing esc
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+});
+
+// Settings submenu toggle with expand/collapse animation
+function opensettingdialog(id) {
+    const submenu = document.getElementById(id);
+    if (!submenu) return;
+    
+    // Find the toggle button associated with this submenu
+    const toggleBtn = submenu.previousElementSibling?.querySelector('.setting-submenu-toggle');
+    
+    submenu.classList.toggle('expanded');
+    if (toggleBtn) {
+        toggleBtn.classList.toggle('rotated');
+    }
+}
+
+
+// Settings
+var notificationsEnabled = localStorage.getItem('sparkradar_notifications') === 'true';
+var sparkalertsEnabled = localStorage.getItem('sparkradar_sparkalerts') === 'true';
+var settingsdata = localStorage.getItem('sparkradar_settings');
+
+var defaultSettings = {
+    'alwaysshowdispboxcloser': true,
+};
+
+// Verify all settings items exist
+for (const [key, value] of Object.entries(defaultSettings)) {
+    if (settingsdata) {
+        const parsedSettings = JSON.parse(settingsdata);
+        if (!(key in parsedSettings)) {
+            parsedSettings[key] = value;
+            localStorage.setItem('sparkradar_settings', JSON.stringify(parsedSettings));
+            settingsdata = JSON.stringify(parsedSettings);
+        }
+    }
+}
+
+if (!settingsdata) {
+    localStorage.setItem('sparkradar_settings', JSON.stringify(defaultSettings));
+    settingsdata = JSON.stringify(defaultSettings);
+}
+
+settingsdata = JSON.parse(settingsdata);
+
+function updateSettingsUI() {
+    document.getElementById('set-notifications').style.background = notificationsEnabled ? '#27beff' : '#333';
+    document.getElementById('set-sparkalerts').style.background = sparkalertsEnabled ? '#27beff' : '#333';
+    document.getElementById('set-dispboxcloser').style.background = settingsdata.alwaysshowdispboxcloser ? '#27beff' : '#333';
+
+    document.getElementById('set-sparknexradurl').value = settingsdata.sparknexradurl || 'https://radar.sparkradar.app';
+
+    refreshAlertSettings();
+
+    console.log("Settings UI updated.");
+}
+
+// Initial UI update
+updateSettingsUI();
+
+var firstuse = true;
+function toggleNotifications() {
+    notificationsEnabled = !notificationsEnabled;
+    localStorage.setItem('sparkradar_notifications', notificationsEnabled ? 'true' : 'false');
+    updateSettingsUI();
+    if (firstuse) {
+        sendNotification("Notifications unavailble", "Alert notifications are still a WIP and do not function yet.", "bell-x", "#ff4444");
+    }
+    firstuse = false;
+}
+
+var firstuse1 = true;
+function togglesparkalerts() {
+    sparkalertsEnabled = !sparkalertsEnabled;
+    localStorage.setItem('sparkradar_sparkalerts', sparkalertsEnabled ? 'true' : 'false');
+    if (firstuse1) {
+        sendNotification("Warning", "DO NOT RELY ON THESE ALERTS. They may not be reliable yet!", "alert-square-rounded", "#ff4444");
+    }
+    updateSettingsUI();
+    firstuse1 = false;
+}
+
+function toggledispboxcloser() {
+    settingsdata.alwaysshowdispboxcloser = !settingsdata.alwaysshowdispboxcloser;
+    localStorage.setItem('sparkradar_settings', JSON.stringify(settingsdata));
+    evaluateDispBoxCloser();
+    updateSettingsUI();
+}
+
+function setSparkNexradURL() {
+    const urlInput = document.getElementById('set-sparknexradurl');
+    const url = urlInput.value.trim();
+
+    if (url && !/^https?:\/\/.+/.test(url)) {
+        sendNotification("SparkNEXRAD URL invalid", "Please enter a valid URL", "x", "#ffcc00");
+        return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    fetch(url + '/', { signal: controller.signal }).then(response => {
+        clearTimeout(timeoutId);
+        return response.status;
+    }).then(code => {
+        if (code === 200) {
+            settingsdata.sparknexradurl = url;
+            localStorage.setItem('sparkradar_settings', JSON.stringify(settingsdata));
+            updateSettingsUI();
+            sendNotification("SparkNEXRAD URL updated", `Super-Res radar will now load from: ${url}`, "check", "#00af00");
+        } else {
+            throw new Error(code);
+        }
+    }).catch(error => {
+        clearTimeout(timeoutId);
+        sendNotification("SparkNEXRAD URL invalid", `${url} responded with error ${error.message}. Ensure it is running.`, "x", "#ffcc00");
+    });
+}
+
+function resetSettings() {
+    setTimeout(() => {
+        document.body.appendChild(document.createElement('div')).innerHTML = `
+            <div id="areyousure" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                <div style="background: #222; display: flex; color: white; flex-direction: column; color: white; padding: 20px; border-radius: 10px; max-width: 400px; text-align: center; box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 6px 6px;">
+                    <div>
+                        <h2>Are you sure?</h2>
+                    </div>
+                    <p style="font-size: medium; margin-bottom: 20px;">You cannot return to your previous settings. This will clear all alert customizations, stored variables, and settings.</a>
+                    </p>
+
+                    <div style="display: flex; flex-direction: row;">
+                        <button onclick="document.getElementById('areyousure').remove();" style="width: 100%; background: #27beff; padding: 10px 20px; margin-right: 3px; border: none; color: black; font-size: large; cursor: pointer;">Nevermind</button>
+                        <button onclick="localStorage.clear(); window.location.reload();" style="width: 100%; background: #ff2121; padding: 10px 20px; margin-left: 3px; border: none; color: black; font-size: large; cursor: pointer;">Clear settings</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 100); 
+}
+
+// Alert settings
+function refreshAlertSettings() {
+    const alertsSubmenu = document.getElementById('sett-alerts');
+
+    var alertsToPopulate = {}
+    const defaultAlerts = {
+        "Air Quality Alert":
+            { enabled: true, color: "#768b00", border: "#768b00", flash: null },
+        "Avalanche Warning":
+            { enabled: true, color: "#ff00ff", border: "#ff00ff", flash: null },
+        "Dust Advisory":
+            { enabled: true, color: "#706e00", border: "#706e00", flash: null },
+        "Dust Storm Warning":
+            { enabled: true, color: "#776b00", border: "#776b00", flash: null },
+        "Flash Flood Emergency":
+            { enabled: true, color: "#00ff00", border: "#00ff00", flash: "#00b600" },
+        "Flash Flood Warning":
+            { enabled: true, color: "#00ff00", border: "#00ff00", flash: null },
+        "Flood Advisory":
+            { enabled: true, color: "#00538b", border: "#00538b", flash: null },
+        "Flood Warning":
+            { enabled: true, color: "#1E90FF", border: "#1E90FF", flash: null },
+        "Flood Watch":
+            { enabled: true, color: "#60fd82", border: "#60fd82", flash: null },
+        "Marine Weather Statement":
+            { enabled: true, color: "#690083", border: "#690083", flash: null },
+        "PDS Tornado Warning":
+            { enabled: true, color: "#e900dd", border: "#e900dd", flash: "#e90000" },
+        "Severe Thunderstorm Warning":
+            { enabled: true, color: "#f1a500", border: "#f1a500", flash: null },
+        "Snow Squall Warning":
+            { enabled: true, color: "#0096aa", border: "#0096aa", flash: null },
+        "Special Marine Warning":
+            { enabled: true, color: "#8b3300", border: "#8b3300", flash: null },
+        "Special Weather Statement":
+            { enabled: true, color: "#eeff00", border: "#eeff00", flash: null },
+        "Tornado Emergency":
+            { enabled: true, color: "#9f00e9", border: "#9f00e9", flash: "#e900dd" },
+        "Tornado Warning":
+            { enabled: true, color: "#e90000", border: "#e90000", flash: null },
+        "Tropical Storm Watch":
+            { enabled: true, color: "#3f0072", border: "#3f0072", flash: null },
+    };
+
+
+    if (localStorage.getItem('sparkradar_alerts')) {
+        alertsToPopulate = JSON.parse(localStorage.getItem('sparkradar_alerts'));
+    } else {
+        // Load default assortment
+        alertsToPopulate = defaultAlerts;
+        localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+    }
+
+    document.getElementById('sett-alerts').innerHTML = '';
+
+    var iterations = 0;
+    var lastDiv = null;
+
+    for (const [alertType, settings] of Object.entries(alertsToPopulate)) {
+        iterations++;
+
+        const alertDiv = document.createElement('div');
+        alertDiv.style.borderRadius = (iterations == 1) ? '20px 20px 5px 5px' : '5px';
+        alertDiv.className = 'setting-checkbox';
+        alertDiv.display = 'flex';
+
+        alertDiv.innerHTML = `
+            <div class="styledcheckbox alertitem" pointer-events: all; style="width: 38px; background: ${settings.enabled ? '#27beff' : '#333'};" id="set-alert-${alertType.replace(/\s+/g, '-')}"></div>
+            <p style="width: 100%; margin-right: 10px;">${alertType}</p>
+            <div class="alertcolor" id="set-color-${alertType.replace(/\s+/g, '-')}" style="color: ${readableTextColor(settings.color)}; background-color: ${settings.color}; cursor: pointer;">c</div>
+        `;
+
+        var thisBorder = !settings.border ? '#000000' : settings.border;
+        alertDiv.innerHTML += `
+            <div class="alertborder" id="set-border-${alertType.replace(/\s+/g, '-')}" style="color: ${readableTextColor(thisBorder)}; background-color: ${thisBorder}; cursor: pointer;">b</div>
+        `;
+
+        var thisFlash = !settings.flash ? '#000000' : settings.flash;
+        alertDiv.innerHTML += `
+            <div class="alertflash" id="set-flash-${alertType.replace(/\s+/g, '-')}" style="color: ${readableTextColor(thisFlash)}; background-color: ${thisFlash}; cursor: pointer;">f</div>
+        `;
+
+        alertDiv.onclick = (e) => {
+            // If clicking on a color/border/flash div, don't toggle the alert
+            if (
+                e.target.classList.contains('alertcolor') ||
+                e.target.classList.contains('alertflash') ||
+                e.target.classList.contains('alertborder')
+            ) {
+                return;
+            }
+            settings.enabled = !settings.enabled;
+            localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+            updateSettingsUI();
+            // Refresh the alerts on the map so changes take effect immediately
+            if (typeof loadAlerts === 'function') loadAlerts(true);
+        };
+
+        alertsSubmenu.appendChild(alertDiv);
+        lastDiv = alertDiv;
+    };
+
+    lastDiv.style.borderRadius = '5px 5px 20px 20px';
+
+    console.log("Populated alert settings submenu with " + iterations + " alert types.");
+}
+
+setTimeout(() => refreshAlertSettings(), 8000);
+
+// Handle alert toggling and color selectors 
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('alertcolor')) {
+        // Create invisible color input and trigger it
+        const colorDiv = e.target;
+        const alertId = colorDiv.id.replace('set-color-', '').replace(/-/g, ' ');
+        const alertsToPopulate = JSON.parse(localStorage.getItem('sparkradar_alerts'));
+        
+        if (alertsToPopulate && alertsToPopulate[alertId]) {
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.value = alertsToPopulate[alertId].color;
+            colorInput.style.display = 'none';
+            document.body.appendChild(colorInput);
+            
+            colorInput.addEventListener('input', (evt) => {
+                const newColor = evt.target.value;
+                alertsToPopulate[alertId].color = newColor;
+                colorDiv.style.backgroundColor = newColor;
+                localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+                loadAlerts(true); // Refresh alerts with new color
+            });
+            
+            colorInput.addEventListener('change', () => {
+                document.body.removeChild(colorInput);
+                loadAlerts(true); // Refresh alerts with new color
+                updateSettingsUI();
+            });
+            
+            colorInput.click();
+        }
+    } else if (e.target.classList.contains('alertborder')) {
+        // Create invisible color input and trigger it
+        const borderDiv = e.target;
+        const alertId = borderDiv.id.replace('set-border-', '').replace(/-/g, ' ');
+        const alertsToPopulate = JSON.parse(localStorage.getItem('sparkradar_alerts'));
+        
+        if (alertsToPopulate && alertsToPopulate[alertId]) {
+            const borderInput = document.createElement('input');
+            borderInput.type = 'color';
+            borderInput.value = alertsToPopulate[alertId].border || '#000000';
+            borderInput.style.display = 'none';
+            document.body.appendChild(borderInput);
+            
+            borderInput.addEventListener('input', (evt) => {
+                const newColor = evt.target.value;
+                alertsToPopulate[alertId].border = newColor;
+                borderDiv.style.backgroundColor = newColor;
+                localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+                loadAlerts(true); // Refresh alerts with new color
+            });
+            
+            borderInput.addEventListener('change', () => {
+                document.body.removeChild(borderInput);
+                updateSettingsUI();
+                loadAlerts(true); // Refresh alerts with new color
+            });
+            
+            borderInput.click();
+        }
+    } else if (e.target.classList.contains('alertflash')) {
+        // Create invisible color input and trigger it
+        const flashDiv = e.target;
+        const alertId = flashDiv.id.replace('set-flash-', '').replace(/-/g, ' ');
+        const alertsToPopulate = JSON.parse(localStorage.getItem('sparkradar_alerts'));
+
+        if (alertsToPopulate && alertsToPopulate[alertId]) {
+            const flashInput = document.createElement('input');
+            flashInput.type = 'color';
+            flashInput.value = alertsToPopulate[alertId].flash || '#000000';
+            flashInput.style.display = 'none';
+            document.body.appendChild(flashInput);
+
+            flashInput.addEventListener('input', (evt) => {
+                const newColor = evt.target.value;
+                alertsToPopulate[alertId].flash = newColor;
+                flashDiv.style.backgroundColor = newColor;
+                localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+                loadAlerts(true); // Refresh alerts with new color
+            });
+
+            flashInput.addEventListener('change', () => {
+                document.body.removeChild(flashInput);
+                updateSettingsUI();
+                loadAlerts(true); // Refresh alerts with new color
+            });
+
+            flashInput.click();
+        }
+    } else if (e.target.classList.contains('alertitem')) {
+        // Convert ID back to alert name
+        const alertId = e.target.id.replace('set-alert-', '').replace(/-/g, ' ');
+
+        var alertsToPopulate = JSON.parse(localStorage.getItem('sparkradar_alerts'));
+
+        if (alertsToPopulate && alertsToPopulate[alertId]) {
+            alertsToPopulate[alertId].enabled = !alertsToPopulate[alertId].enabled;
+            localStorage.setItem('sparkradar_alerts', JSON.stringify(alertsToPopulate));
+            updateSettingsUI();
+            loadAlerts(true);
+        }
+    }
+});
+
+
+function help(section) {
+    if (section == 'alertsettings') openDisplaybox("Alert Settings Help", "#27beff", section);
+}
+</script>
+<script>
+// --- inlined from js/popup.js ---
+// Popups
+let popupLngLat = null;
+
+// Suppress popups briefly during zoom/double-tap gestures
+let suppressPopupUntil = 0;
+try {
+    map.on('zoomstart', () => { suppressPopupUntil = Date.now() + 800; });
+    map.on('zoomend', () => { suppressPopupUntil = Date.now() + 300; });
+    map.on('dblclick', () => { suppressPopupUntil = Date.now() + 800; });
+} catch {}
+
+// Occasionally, map.on('click') throws an error on page load, which makes no sense
+try {
+    map.on('click', async (e) => {
+        if (Date.now() < suppressPopupUntil) { return }
+        // If we are trying to measure something, do not open a popup
+        if (measureBtn.classList.contains('toolbtn-active')) { return }
+
+
+        popupLngLat = e.lngLat;
+        const popup = document.getElementById('customPopup');
+        const point = map.project(popupLngLat);
+
+        // Close existing popup, if one is open
+        if (!popup.classList.contains('hidden')) {
+            popup.classList.add('hidden');
+            return;
+        }
+
+        // Retrieve the clicked point
+        const clickedPoint = turf.point([e.lngLat.lng, e.lngLat.lat]);
+        const foundIds = [];
+
+        // Loop through all polygon sources
+        Object.keys(map.style.sourceCaches).forEach(sourceId => {
+            const source = map.getSource(sourceId);
+            if (!source || source.type !== 'geojson') return;
+
+            const features = map.querySourceFeatures(sourceId, {
+            sourceLayer: undefined,
+            filter: ['==', '$type', 'Polygon']
+            });
+
+            features.forEach(feature => {
+            if (turf.booleanPointInPolygon(clickedPoint, feature)) {
+                foundIds.push(feature.id || feature.properties.id || sourceId);
+            }
+            });
+        });
+
+        let content;
+        let alertsUnderClick = [];
+
+        // Prepare content for the popup
+        if (foundIds.length) {
+            // Get alert details for each found ID
+            alerts.forEach(alert => {
+                if (foundIds.includes('alert_' + alert.id)) {
+
+                    let detectables = [];
+                    try { detectables.push('<strong>Tornado: ' + alert.properties.parameters.tornadoDetection[0] + '</strong>'); } catch {}
+                    try { detectables.push('<strong>Hail: ' + alert.properties.parameters.maxHailSize[0] + 'in, ' + alert.properties.parameters.hailThreat[0] + '</strong>'); } catch {
+                        // Fallback
+                        try { detectables.push('<strong>Hail: ' + alert.properties.parameters.maxHailSize[0] + 'in. </strong>'); } catch {}
+                    }
+                    try { detectables.push('<strong>Wind: ' + alert.alert.properties.parameters.maxWindGust[0]) + ', ' + alert.properties.parameters.windThreat[0] + '</strong>';  } catch {
+                        // Fallback
+                        try { detectables.push('<strong>Wind: ' + alert.properties.parameters.maxWindGust[0] + '</strong>'); } catch {}
+                    }
+                    try { detectables.push('<strong>Flooding: ' + alert.properties.flashFloodDamage[0] + ', ' + alert.properties.parameters.flashFloodDetection[0] + '</strong>'); } catch {}
+
+                    alertsUnderClick.push(`
+                        <div class="alertpopupitem" onclick="viewAlertDetails('${alert.id}');">
+                            <div style="margin-bottom: 5px; width: calc(100% - 10px); text-align: center; border-radius: 20px; padding: 5px; background-color: ${findAlertColor(alert.properties.event)}; color: ${readableTextColor(findAlertColor(alert.properties.event))};">
+                                <strong style="font-size: medium; text-shadow: 1px 1px 3px ${readableTextColor(findAlertColor(alert.properties.event), true)};">${alert.properties.event}</strong>
+                            </div>
+                            <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <p style="font-size: small;">
+                                        Expires in: <strong>${isoTimeUntil(alert.properties.expires)}</strong>
+                                        ${detectables.length ? '<br>' + detectables.join('<br>') : ''}
+                                    </p>
+                                </div>
+                                <div style="display: flex; flex-direction: column;">
+                                    <!--<button onclick="viewAlertDetails('${alert.id}');" class="alertbutton"><i style="font-size: 24px;" class="ti ti-message"></i></button>
+                                --></div>
+                            </div>
+                        </div>
+                    `)
+                }
+            });
+            content = `
+                <div style="height: 100%; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column;">
+                    <h2 style="margin: 10px; margin-top: 5px;">Point (${e.lngLat.lat.toFixed(3)}, ${e.lngLat.lng.toFixed(3)})</h2>
+                    ${alertsUnderClick.reverse().join('')}
+                </div>
+                `;
+        } else {
+            // No alerts here
+            content = null;
+        }
+
+        // Show popup
+        if (!content) return;
+
+        popup.style.left = `${point.x}px`;
+        popup.style.top = `${point.y}px`;
+        popup.classList.remove('hidden');
+
+        document.querySelector('.popup-body').innerHTML = content;
+    });
+} catch {}
+
+// Keep popup geolocked on every frame, but skip if map was just clicked
+let skipNextRender = false;
+
+map.on('click', () => {
+    skipNextRender = true;
+});
+
+map.on('render', () => {
+    if (skipNextRender) {
+        skipNextRender = false;
+        return;
+    }
+    if (!popupLngLat) return;
+
+    const popup = document.getElementById('customPopup');
+    const point = map.project(popupLngLat);
+
+    popup.style.left = `${point.x}px`;
+    popup.style.top = `${point.y}px`;
+});
+
+</script>
+</html>
